@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import styles from '@/styles/userPage.module.css';
+import styles from '@/styles/adminPage.module.css';
 import Modal from '@/components/ui/Modal';
 
 export default function UserPage() {
@@ -16,7 +16,7 @@ export default function UserPage() {
 
   return (
     <div className={styles.dashboard}>
-      <h1 className={styles.title}>Twoje Ćwiczenia</h1>
+      <h1 className={styles.title}>ADMIN PAGE --- TODO</h1>
       <table className={styles.table}>
         <thead>
           <tr>

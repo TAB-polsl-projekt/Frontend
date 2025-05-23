@@ -202,7 +202,6 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #000000;
 }
 
 /* Stylizacja stopki */
@@ -222,40 +221,4 @@
 .dark .footer {
   background-color: #1e1e1e;
   color: #ffffff;
-}
-
-.settingsForm {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.settingsForm label {
-  display: flex;
-  flex-direction: column;
-  font-weight: bold;
-  color: #000000;
-}
-
-.dark .settingsForm label {
-  color: #ffffff;
-}
-
-.settingsForm input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.settingsForm button {
-  padding: 0.75rem;
-  background-color: #2a94f7;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.settingsForm button:hover {
-  background-color: #1e7cd6;
 }

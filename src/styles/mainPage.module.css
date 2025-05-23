@@ -27,9 +27,20 @@
   color: #ffffff;
   border-radius: 8px;
   cursor: pointer;
+  margin-bottom: 1.5rem;
 }
 
 .loginButton:hover {
   background-color: #ffffff;
   color: #0d3b66;
+}
+
+.checkAdminButton {
+  padding: 12px 24px;
+  font-size: 18px;
+  border: 2px solid #ffffff;
+  background: none;
+  color: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
 }

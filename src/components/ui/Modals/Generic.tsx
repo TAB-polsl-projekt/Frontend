@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import styles from '@/styles/userPage.module.css';
+import styles from '@/styles/modal.module.css';
 
 interface ModalProps {
   onClose: () => void;

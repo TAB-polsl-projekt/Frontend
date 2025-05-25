@@ -1,24 +1,65 @@
-"use client";
+'use client';
 
 import React from 'react';
 import styles from '@/styles/reportPage.module.css';
 import { useRouter } from 'next/navigation';
 
-export default function ReportPage() {
+export default function ReportUploadPage() {
 
-    const router = useRouter();
+  const router = useRouter();
+
+  const handleSubmit = () => {
+    // Here you would typically handle the form submission,
+    // such as sending the data to an API or processing it.
+    // For now, we'll just log a message and redirect.
+    console.log('Form submitted');
+    router.push('/userMain'); // Redirect to user main page after submission
+  }
 
   return (
-    <div>
-      <h1 className={styles.text}>Sprawozdanie</h1>
-      <p className={styles.text}>Tu będzie formularz do wysyłania sprawozdań.</p>
-      <form>
-        <label className={styles.text} htmlFor="report">Wybierz plik:</label>
-        <input className={styles.text} type="file" id="report" name="report" accept="application/pdf" />
-        <button className={styles.text} type="submit">Wyślij</button>
-      </form>
-      <br></br>
-      <button className={styles.text} onClick={() => router.push('/userMain')}>Powrót</button> 
-    </div>
+    <form className={styles.formContainer}>
+      <h1 style={{ color: '#000000', fontSize: 30 }}>Sprawozdanie</h1>
+
+      <label className={styles.label}>Ćwiczenie</label>
+      <select className={styles.select}>
+        <option>---</option>
+        <option>Ćwiczenie 1</option>
+        <option>Ćwiczenie 2</option>
+      </select>
+
+      <label className={styles.label}>Prowadzący</label>
+      <select className={styles.select}>
+        <option>---</option>
+        <option>Dr Kowalski</option>
+        <option>Mgr Nowak</option>
+      </select>
+
+      <label className={styles.label}>Data odbycia ćwiczenia</label>
+      <input type="date" className={styles.input} />
+
+      <label className={styles.label}>Podsekcja</label>
+      <input type="text" className={styles.input} />
+
+      <label className={styles.label}>Skład:</label>
+      <div className={styles.checkboxGroup}>
+        {Array.from({ length: 10 }).map((_, i) => (
+          <label key={i}>
+            <input type="checkbox" /> {i + 1}
+          </label>
+        ))}
+      </div>
+
+      <label className={styles.label}>Uwagi:</label>
+      <textarea rows={4} className={styles.textarea} />
+
+      <label className={styles.label}>Wersja:</label>
+      <input type="number" defaultValue={1} min={1} className={styles.input} />
+
+      <label className={styles.label}>Plik (pdf lub zip):</label>
+      <small style={{color: '#000000'}}>Format zip stosować wyłącznie gdy zachodzi konieczność wysyłki kilku plików</small>
+      <input type="file" accept="application/pdf,application/zip" className={styles.input} />
+
+      <button type="submit" className={styles.button} onClick={handleSubmit}>Wyślij</button>
+    </form>
   );
 }

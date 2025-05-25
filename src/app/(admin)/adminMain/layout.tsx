@@ -1,7 +1,7 @@
 // src/app/(user)/userPage/layout.tsx
 'use client';
 import React from 'react';
-import Sidebar from '@/components/ui/Sidebar';
+import Sidebar from '@/components/ui/Sidebars/Admin';
 import styles from '@/styles/adminPage.module.css';
 import Footer from '@/components/ui/Footer';
 

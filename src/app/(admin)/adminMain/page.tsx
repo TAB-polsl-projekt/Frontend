@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import styles from '@/styles/adminPage.module.css';
-import Modal from '@/components/ui/Modal';
+import Modal from '@/components/ui/Modals/Generic';
 
 export default function UserPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -1,0 +1,87 @@
+/* STYLIZACJA PASKA BOCZNEGO I JEGO ZAWARTOŚCI */
+
+/* Przycisk menu (hamburger) */
+.menuButton {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 1001;
+  color: #19242e;
+}
+
+.dark .menuButton {
+  color: #ffffff;
+}
+
+/* Stylizacja paska bocznego */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -250px;
+  width: 250px;
+  height: 100%;
+  background-color: #2a94f7;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  transition: left 0.3s ease-in-out;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 4rem;
+  overflow-y: auto;
+}
+
+.dark .sidebar {
+  background-color: #1e1e1e;
+}
+
+.sidebarOpen {
+  left: 0;
+}
+
+/* Stylizacja tła przy otwartym pasku bocznym */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Stylizacja linków nawigacyjnych na górze sidebara */
+.navLinks {
+  padding-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stylizacja linków na dole sidebara */
+.bottomLinks {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stylizacja linków i przycisków */
+.sidebar a,
+.sidebar button {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.dark .sidebar a,
+.dark .sidebar button {
+  color: #ffffff;
+}

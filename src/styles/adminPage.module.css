@@ -1,5 +1,7 @@
 /* src/styles/userPage.module.css */
 
+/* STYLIZACJA MAIN CONTENTU I TYTUŁU STRONY */
+
 /* Ogólny kontener strony */
 .container {
   display: flex;
@@ -39,6 +41,8 @@
   color: #ffffff;
 }
 
+/* STYLIZACJA WSZYSTKIEGO ZWIĄZANEGO Z TABELĄ */
+
 /* Stylizacja tabeli */
 .table {
   color: #000000;
@@ -46,23 +50,44 @@
   border-collapse: collapse;
   position: relative;
   left: 8rem;
+  overflow-x: auto;
+  overflow-y: auto;
+  border-radius: 30px;
 }
 
 .dark .table {
   color: #ffffff;
 }
 
-.table th,
+.table tr:nth-child(even) {
+  background-color: #d1d1d1;
+}
+
+.table td:hover {
+  background-color: #6fdaf7;
+}
+
+.table th {
+  background-color: #2a94f7;
+  color: #ffffff;
+  border: 1px solid #000000;
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: center;
+}
 .table td {
   border: 1px solid #000000;
   padding: 0.5rem;
   text-align: left;
+  vertical-align: center;
 }
 
 .dark .table th,
 .dark .table td {
   border: 1px solid #ffffff;
 }
+
+/* STYLIZACJA WSZYSTKIEGO ZWIĄZANEGO Z PRZYCISKAMI */
 
 /* Stylizacja przycisku-linku */
 .linkButton {
@@ -73,152 +98,9 @@
   text-decoration: underline;
   padding: 0;
   font: inherit;
+  text-align: left;
 }
 
 .dark .linkButton {
   color: #66b2ff;
-}
-
-/* Przycisk menu (hamburger) */
-.menuButton {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  z-index: 1001;
-  color: #19242e;
-}
-
-.dark .menuButton {
-  color: #ffffff;
-}
-
-/* Stylizacja paska bocznego */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: -250px;
-  width: 250px;
-  height: 100%;
-  background-color: #2a94f7;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  transition: left 0.3s ease-in-out;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 4rem;
-}
-
-.dark .sidebar {
-  background-color: #1e1e1e;
-}
-
-.sidebarOpen {
-  left: 0;
-}
-
-/* Stylizacja tła przy otwartym pasku bocznym */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-}
-
-/* Stylizacja linków nawigacyjnych na górze sidebara */
-.navLinks {
-  padding-top: 2.5rem;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Stylizacja linków na dole sidebara */
-.bottomLinks {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Stylizacja linków i przycisków */
-.sidebar a,
-.sidebar button {
-  background: none;
-  border: none;
-  color: #ffffff;
-  cursor: pointer;
-  text-align: left;
-  padding: 0.5rem 0;
-  font-size: 1rem;
-  text-decoration: none;
-}
-
-.dark .sidebar a,
-.dark .sidebar button {
-  color: #ffffff;
-}
-
-/* Stylizacja modala */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1002;
-  color: #000000;
-}
-
-.modalContent {
-  background-color: #ffffff;
-  padding: 2rem;
-  border-radius: 8px;
-  position: relative;
-  max-width: 500px;
-  width: 90%;
-}
-
-.dark .modalContent {
-  background-color: #1e1e1e;
-  color: #ffffff;
-}
-
-/* Przycisk zamykania modala */
-.closeButton {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-/* Stylizacja stopki */
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: #2a94f7;
-  color: #ffffff;
-  text-align: center;
-  padding: 1rem 0;
-  z-index: 1000;
-  font-size: 0.9rem;
-}
-
-.dark .footer {
-  background-color: #1e1e1e;
-  color: #ffffff;
 }

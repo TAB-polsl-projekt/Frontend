@@ -8,12 +8,16 @@
   min-height: 100vh;
 }
 
+.dark .container {
+  background-color: #121212;
+}
+
 /* Główna zawartość strony */
 .mainContent {
   flex: 1;
-  padding: 2rem;
-  background-color: #f9f9f9;
+  background-color: #ffffff;
   padding-bottom: 4rem;
+  padding: 2.5rem 5rem;
 }
 
 /* Stylizacja dla trybu ciemnego */
@@ -22,7 +26,6 @@
   color: #ffffff;
 }
 
-/* Stylizacja dashboardu */
 .dashboard {
   width: 100%;
 }
@@ -33,7 +36,7 @@
   color: #000000;
   font-size: 2rem;
   margin-bottom: 1rem;
-  left: 8rem;
+  padding-left: 8rem;
   position: relative;
 }
 
@@ -45,14 +48,15 @@
 
 /* Stylizacja tabeli */
 .table {
+  padding-left: 8rem;
   color: #000000;
-  width: 80%;
-  border-collapse: collapse;
+  width: 90%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: 'Segoe UI', sans-serif;
   position: relative;
-  left: 8rem;
   overflow-x: auto;
   overflow-y: auto;
-  border-radius: 30px;
 }
 
 .dark .table {
@@ -61,6 +65,10 @@
 
 .table tr:nth-child(even) {
   background-color: #d1d1d1;
+}
+
+.table tr:nth-child(odd) {
+  background-color: #ffffff;
 }
 
 .table td:hover {
@@ -93,14 +101,25 @@
 .linkButton {
   background: none;
   border: none;
-  color: #0070f3;
+  /*color: #0070f3;*/
   cursor: pointer;
-  text-decoration: underline;
+  /*text-decoration: underline;*/
   padding: 0;
   font: inherit;
   text-align: left;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.linkButton:hover {
+  color: #0070f3;
+  text-decoration: underline;
 }
 
 .dark .linkButton {
   color: #66b2ff;
+}
+
+.dark .linkButton:hover {
+  color: #4d94ff;
+  text-decoration: underline;
 }

@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import styles from '@/styles/modal.module.css';
+import { useSubject } from '@/context/SubjectContext';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -10,9 +11,12 @@ interface SubjectModalProps {
 
 export default function SubjectModal({ onClose }: SubjectModalProps) {
   const [selectedSubject, setSelectedSubject] = useState('');
+  const { setSubject } = useSubject();
+
 
   const handleSubjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSubject(event.target.value);
+    setSubject(event.target.value);
   };
 
   const handleConfirm = () => {

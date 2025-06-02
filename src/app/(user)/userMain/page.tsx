@@ -4,10 +4,12 @@
 import React, { useState } from 'react';
 import userStyles from '@/styles/userPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
+import { useSubject } from '@/context/SubjectContext';
 
 export default function UserPage() {
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [selectedString, setSelectedString] = useState('');
+  const {subject} = useSubject();
 
   const handleExerciseClick = (exercise: string) => {
     setSelectedString(exercise);
@@ -21,7 +23,7 @@ export default function UserPage() {
 
   return (
     <div className={userStyles.dashboard}>
-      <h1 className={userStyles.title}>Twoje Ćwiczenia</h1>
+      <h1 className={userStyles.title}>Twoje Ćwiczenia z przedmiotu: {subject}</h1>
       <table className={userStyles.table}>
         <thead>
           <tr>

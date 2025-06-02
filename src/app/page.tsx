@@ -2,6 +2,7 @@
 
 import styles from "@/styles/mainPage.module.css";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function Home() {
   const router = useRouter();
@@ -9,6 +10,7 @@ export default function Home() {
   const handleLogin = () => {
     router.refresh();
     if (!isAdmin){
+      //signIn("azure-ad");
       router.push("/userMain");
     }
     else {

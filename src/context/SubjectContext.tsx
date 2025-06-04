@@ -1,13 +1,21 @@
 // src/context/SubjectContext.tsx
 import { createContext, useContext, useState, ReactNode } from "react";
 
+interface Subject {
+  subject_id: string;
+  subject_name: string;
+}
+
 const SubjectContext = createContext<{
-  subject: string;
-  setSubject: (subject: string) => void;
+  subject: Subject;
+  setSubject: (subject: Subject) => void;
 } | null>(null);
 
 export const SubjectProvider = ({ children }: { children: ReactNode }) => {
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState<Subject>({
+    subject_id: "",
+    subject_name: "",
+    });
 
   return (
     <SubjectContext.Provider value={{ subject, setSubject }}>
@@ -18,6 +26,7 @@ export const SubjectProvider = ({ children }: { children: ReactNode }) => {
 
 export const useSubject = () => {
   const ctx = useContext(SubjectContext);
+  console.log("useSubject context:", ctx?.subject);
   if (!ctx) throw new Error("useSubject must be used within SubjectProvider");
   return ctx;
 };

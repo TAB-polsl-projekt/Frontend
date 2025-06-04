@@ -55,9 +55,8 @@ export default function ReportUploadPage() {
       <label className={styles.label}>Wersja:</label>
       <input type="number" defaultValue={1} min={1} className={styles.input} />
 
-      <label className={styles.label}>Plik (pdf lub zip):</label>
-      <small style={{color: '#000000'}}>Format zip stosować wyłącznie gdy zachodzi konieczność wysyłki kilku plików</small>
-      <input type="file" accept="application/pdf,application/zip" className={styles.input} />
+      <label className={styles.label}>Plik ZIP:</label>
+      <input type="file" accept="application/zip" className={styles.input} />
 
       <button type="submit" className={styles.button} onClick={handleSubmit}>Wyślij</button>
     </form>

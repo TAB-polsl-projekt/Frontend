@@ -1,13 +1,20 @@
-import NextAuth from "next-auth";
-import AzureADProvider from "next-auth/providers/azure-ad";
+import NextAuth from 'next-auth';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 
-export default NextAuth({
+const env = process.env;
+
+export const authOptions = {
   providers: [
     AzureADProvider({
-      clientId: process.env.AZURE_AD_CLIENT_ID!,
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.AZURE_AD_TENANT_ID!,
+      clientId: `${env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID}`,
+      clientSecret: `${env.NEXT_PUBLIC_AZURE_AD_CLIENT_SECRET}`,
+      tenantId: `${env.NEXT_PUBLIC_AZURE_AD_TENANT_ID}`,
+      authorization: {
+        params: { scope: 'openid email profile User.Read  offline_access' },
+      },
+      httpOptions: { timeout: 10000 },
     }),
   ],
-  //secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+export default NextAuth(authOptions);

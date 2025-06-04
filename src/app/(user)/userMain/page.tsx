@@ -20,7 +20,7 @@ export default function UserPage() {
 
   const [data, setData] = useState<ApiResponse | null>(null);
 
-  //'/api/subjects/<id>'
+  //'/api/subjects/<id>' -- endpoint to fetch subject and assignments
 
 
   return (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import userStyles from '@/styles/userPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
+import { useSubject } from '@/context/SubjectContext';
 
 interface Assignment {
   assignment_id: string;
@@ -18,9 +19,10 @@ export default function AssignmentsTable() {
   const [data, setData] = useState<AssignmentsData | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const {subject} = useSubject();
 
   useEffect(() => {
-    fetch('/JSON_API_Endpoint_Data/api-subjects-id.txt')
+    fetch('/JSON_API_Endpoint_Data/api-subjects-id.json')
       .then((res) => res.json())
       .then((json) => setData(json));
   }, []);
@@ -39,7 +41,7 @@ export default function AssignmentsTable() {
 
   return (
     <div className={userStyles.dashboard}>
-      <h1 className={userStyles.title}>Twoje Ćwiczenia z przedmiotu: {data.subject_name}</h1>
+      <h1 className={userStyles.title}>Twoje Ćwiczenia z przedmiotu: {subject.subject_name}</h1>
       <table className={userStyles.table}>
         <thead>
           <tr>

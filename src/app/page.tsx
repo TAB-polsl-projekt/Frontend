@@ -10,8 +10,8 @@ export default function Home() {
   const handleLogin = () => {
     router.refresh();
     if (!isAdmin){
-      signIn('azure-ad', {callbackUrl: '/userMain'});
-      //router.push("/userMain");
+      //signIn('azure-ad', {callbackUrl: '/userMain'});
+      router.push("/userMain");
     }
     else {
       router.push("/adminMain");

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import userStyles from '@/styles/userPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
 import { useSubject } from '@/context/SubjectContext';
+import Cookies from 'js-cookie';
 
 interface Assignment {
   assignment_id: string;
@@ -19,13 +20,53 @@ export default function AssignmentsTable() {
   const [data, setData] = useState<AssignmentsData | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
-  const {subject} = useSubject();
+  const {subject, setSubject} = useSubject();
+
+  
+    useEffect(() => {
+    if (subject?.subject_id) {
+      setData;
+      return; // Already set—do nothing
+      }
+
+    async function initSubject() {
+      try {
+        const res = await fetch('http://localhost:8000/api/subjects', {
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Could not load subjects');
+
+        const list: { subject_id: string; subject_name: string }[] = await res.json();
+
+        let chosen = list[0];
+
+        const cookieId = Cookies.get('subject_id');
+        if (cookieId) {
+          const found = list.find(s => s.subject_id === cookieId);
+          console.log('Cookie found:', cookieId, 'Found subject:', found);
+          if (found) chosen = found;
+        }
+
+        setSubject(chosen);
+        setData;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    initSubject();
+  }, [subject, setSubject]);
 
   useEffect(() => {
-    fetch('/JSON_API_Endpoint_Data/api-subjects-id.json')
+    fetch('http://localhost:8000/api/subjects/' + Cookies.get('subject_id'), {
+      method: 'GET',
+      credentials: 'include',
+    })
       .then((res) => res.json())
       .then((json) => setData(json));
-  }, []);
+  }, [subject]);
+
+
 
   const handleExerciseClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
@@ -38,6 +79,8 @@ export default function AssignmentsTable() {
   };
 
   if (!data) return <p>Loading...</p>;
+
+  console.log(data);
 
   return (
     <div className={userStyles.dashboard}>

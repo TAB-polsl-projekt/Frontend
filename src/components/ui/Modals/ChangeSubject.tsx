@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '@/styles/modal.module.css';
 import { useSubject } from '@/context/SubjectContext';
+import Cookies from 'js-cookie';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -19,7 +20,10 @@ export default function SubjectModal({ onClose }: SubjectModalProps) {
   const { setSubject } = useSubject();
 
   useEffect(() => {
-    fetch('JSON_API_Endpoint_Data/api-subjects.json')
+    fetch('http://localhost:8000/api/subjects', {
+      method: 'GET',
+      credentials: 'include'
+      })
       .then((res) => res.json())
       .then((json: Subject[]) => setSubjects(json))
       .catch((error) => {
@@ -35,6 +39,7 @@ export default function SubjectModal({ onClose }: SubjectModalProps) {
     const selectedSubject = subjects.find(subject => subject.subject_id === selectedSubjectId);
     if (selectedSubject) {
       setSubject(selectedSubject);
+      Cookies.set('subject_id', selectedSubject.subject_id, { expires: 30 });
       onClose();
     } else {
       alert('Proszę wybrać przedmiot.');

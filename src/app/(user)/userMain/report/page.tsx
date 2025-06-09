@@ -22,7 +22,10 @@ export default function ReportUploadPage() {
   useEffect(() => {
     if (!subject?.subject_id) return;
 
-  fetch(`../JSON_API_Endpoint_Data/api-subjects-id.json`)
+  fetch(`http://localhost:8000/api/subjects/${subject.subject_id}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
     .then((res) => {
       if (!res.ok) {
         throw new Error('Failed to fetch assignments');
@@ -38,33 +41,48 @@ export default function ReportUploadPage() {
 }, [subject]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!assignmentId || !zipFile) {
-      alert('Proszę wybrać ćwiczenie i załączyć plik ZIP.');
-      return;
-    }
+  if (!assignmentId || !zipFile) {
+    alert('Proszę wybrać ćwiczenie i załączyć plik ZIP.');
+    return;
+  }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const arrayBuffer = reader.result as ArrayBuffer;
-      const response = await fetch(`/api/assignments/${assignmentId}/solution`, {
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const arrayBuffer = reader.result as ArrayBuffer;
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    const payload = {
+      solution_id: crypto.randomUUID(), // or any meaningful ID
+      solution_data: Array.from(uint8Array),    // API expects an array
+      mime_type: 'application/zip'
+    };
+    try {
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/octet-stream',
+          'Content-Type': 'application/json',
         },
-        body: arrayBuffer,
+        credentials: 'include', // if needed for session_id cookie
+        body: JSON.stringify(payload),
       });
-
+      console.log('Paylod JSON:', JSON.stringify(payload));
       if (response.ok) {
         alert('Sprawozdanie zostało przesłane pomyślnie.');
         router.push('/userMain');
       } else {
-        alert('Wystąpił błąd podczas przesyłania sprawozdania.');
+        const err = await response.text();
+        alert('Błąd podczas przesyłania: \n' + err);
       }
-    };
-    reader.readAsArrayBuffer(zipFile);
+    } catch (error) {
+      console.error('Error during upload:', error);
+      alert('Wystąpił błąd podczas przesyłania sprawozdania.');
+    }
   };
+
+  reader.readAsArrayBuffer(zipFile);
+};
 
   return (
     <form className={styles.formContainer} onSubmit={handleSubmit}>

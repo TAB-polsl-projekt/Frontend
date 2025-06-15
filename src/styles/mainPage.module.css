@@ -35,12 +35,11 @@
   color: #0d3b66;
 }
 
-.checkAdminButton {
-  padding: 12px 24px;
-  font-size: 18px;
-  border: 2px solid #ffffff;
-  background: none;
-  color: #ffffff;
+.loginInput {
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
   border-radius: 8px;
-  cursor: pointer;
+  width: 200px;
 }

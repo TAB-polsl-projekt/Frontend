@@ -1,7 +1,7 @@
 // src/app/(user)/userPage/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from '@/styles/adminPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
 
@@ -36,7 +36,7 @@ interface Solution {
   user_id: string;
   grade?: number;
   submission_date?: Date;
-  solution_data?: Uint8Array;
+  solution_data?: string;
   reviewed_by?: string;
   review_comment?: string;
   review_date?: Date;
@@ -60,7 +60,13 @@ interface SubjectData {
 }
 
 export default function UserPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [a, setA] = useState({
+    "a": 1,
+    "b": 2,
+    "c": 3
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
   const [isAddAssignmentModalOpen, setIsAddAssignmentModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -76,146 +82,183 @@ export default function UserPage() {
     description: ''
   });
 
-  // State for API data
-  const [students, setStudents] = useState<User[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectsData, setSubjectsData] = useState<Record<string, SubjectData>>({});
-  const [subjectStudents, setSubjectStudents] = useState<Record<string, string[]>>({});
+  // Lista wszystkich studentów
+  const [students] = useState<User[]>([
+    { user_id: '1', email: 'jan.kowalski@example.com', name: 'Jan', surname: 'Kowalski', student_id: '123456', user_disabled: false, is_admin: false },
+    { user_id: '2', email: 'anna.nowak@example.com', name: 'Anna', surname: 'Nowak', student_id: '123457', user_disabled: false, is_admin: false },
+    { user_id: '3', email: 'piotr.wisniewski@example.com', name: 'Piotr', surname: 'Wiśniewski', student_id: '123458', user_disabled: false, is_admin: false },
+    { user_id: '4', email: 'maria.wójcik@example.com', name: 'Maria', surname: 'Wójcik', student_id: '123459', user_disabled: false, is_admin: false },
+    { user_id: '5', email: 'adam.lewandowski@example.com', name: 'Adam', surname: 'Lewandowski', student_id: '123460', user_disabled: false, is_admin: false }
+  ]);
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // Fetch subjects
-        const subjectsResponse = await fetch('http://localhost:8000/api/subjects', {
-          credentials: 'include'
-        });
-        if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
-        const subjectsData = await subjectsResponse.json();
-        setSubjects(subjectsData);
+  // Mapowanie przedmiotów do studentów
+  const [subjectStudents, setSubjectStudents] = useState<Record<string, string[]>>({
+    '1': ['1', '2', '3'], // Automaty cyfrowe
+    '2': ['2', '4', '5'], // Programowanie obiektowe
+  });
 
-        // Fetch all users
-        alert('Endpoint niezaimplementowany: GET /users');
-        const usersResponse = await fetch('http://localhost:8000/api/users', {
-          credentials: 'include'
-        });
-        if (!usersResponse.ok) throw new Error('Failed to fetch users');
-        const usersData = await usersResponse.json();
-        setStudents(usersData);
+  const [subjects, setSubjects] = useState<Subject[]>([
+    { subject_id: '1', subject_name: 'Automaty cyfrowe', editor_role_id: '1' },
+    { subject_id: '2', subject_name: 'Programowanie obiektowe', editor_role_id: '2' },
+  ]);
 
-      } catch (error) {
-        console.error('Error fetching initial data:', error);
-        alert('Błąd komunikacji z API');
+  const [subjectsData, setSubjectsData] = useState<Record<string, SubjectData>>({
+    '1': {
+      assignments: [
+        { assignment_id: '1', subject_id: '1', title: 'Ćwiczenie 1: Kombinacyjne automaty cyfrowe', description: 'Projektowanie i implementacja układów kombinacyjnych' },
+        { assignment_id: '2', subject_id: '1', title: 'Ćwiczenie 2: Elementarne automaty sekwencyjne', description: 'Analiza i projektowanie automatów sekwencyjnych' }
+      ],
+      studentAssignments: {
+        '1': [
+          { assignmentId: '1', term1: '3.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '3.0' },
+          { assignmentId: '2', term1: '2.0', poprawa: '3.5', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '2.75' }
+        ],
+        '2': [
+          { assignmentId: '1', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' },
+          { assignmentId: '2', term1: '5.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '5.0' }
+        ],
+        '3': [
+          { assignmentId: '1', term1: '3.5', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '3.5' },
+          { assignmentId: '2', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' }
+        ]
+      },
+      solutions: {
+        '1': [
+          { 
+            solution_id: '1',
+            user_id: '1',
+            grade: 3.0,
+            submission_date: new Date(),
+            review_comment: 'Dobra praca',
+            review_date: new Date(),
+            solution_data: "Moje super sprawozdanie."
+          },
+          {
+            solution_id: '2',
+            user_id: '1',
+            grade: 2.75,
+            submission_date: new Date(),
+            review_comment: 'Wymaga poprawy',
+            review_date: new Date(),
+            solution_data: "Moje super sprawozdanie."
+          }
+        ],
+        '2': [
+          {
+            solution_id: '3',
+            user_id: '2',
+            grade: 4.0,
+            submission_date: new Date(),
+            review_comment: 'Bardzo dobra praca',
+            review_date: new Date(),
+            solution_data: "Moje super sprawozdanie."
+          },
+          {
+            solution_id: '4',
+            user_id: '2',
+            grade: 5.0,
+            submission_date: new Date(),
+            review_comment: 'Wzorowa praca',
+            review_date: new Date(),
+            solution_data: "Moje super sprawozdanie."
+          }
+        ]
       }
-    };
-
-    fetchInitialData();
-  }, []);
-
-  // Fetch subject data when selected
-  useEffect(() => {
-    const fetchSubjectData = async () => {
-      if (!selectedSubject) return;
-
-      try {
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}`, {
-          credentials: 'include'
-        });
-        if (!response.ok) throw new Error('Failed to fetch subject data');
-        const data = await response.json();
-        
-        // Transform API data to match our frontend structure
-        const subjectData: SubjectData = {
-          assignments: data.assignments,
-          studentAssignments: {}, // Will be populated from API
-          solutions: {} // Will be populated from API
-        };
-
-        // Fetch student assignments
-        alert('Endpoint niezaimplementowany: GET /subjects/{id}/student-assignments');
-        const studentAssignmentsResponse = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/student-assignments`, {
-          credentials: 'include'
-        });
-        if (studentAssignmentsResponse.ok) {
-          const studentAssignmentsData = await studentAssignmentsResponse.json();
-          subjectData.studentAssignments = studentAssignmentsData;
-        }
-
-        // Fetch solutions
-        alert('Endpoint niezaimplementowany: GET /subjects/{id}/solutions');
-        const solutionsResponse = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/solutions`, {
-          credentials: 'include'
-        });
-        if (solutionsResponse.ok) {
-          const solutionsData = await solutionsResponse.json();
-          subjectData.solutions = solutionsData;
-        }
-        
-        setSubjectsData(prev => ({
-          ...prev,
-          [selectedSubject]: subjectData
-        }));
-
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-        alert('Błąd komunikacji z API');
+    },
+    '2': {
+      assignments: [
+        { assignment_id: '1', subject_id: '2', title: 'Laboratorium 1: Wprowadzenie do Javy', description: 'Podstawy programowania w Javie' },
+        { assignment_id: '2', subject_id: '2', title: 'Laboratorium 2: Klasy i obiekty', description: 'Programowanie obiektowe w Javie' },
+        { assignment_id: '3', subject_id: '2', title: 'Laboratorium 3: Dziedziczenie i polimorfizm', description: 'Zaawansowane koncepcje OOP' }
+      ],
+      studentAssignments: {
+        '2': [
+          { assignmentId: '1', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' },
+          { assignmentId: '2', term1: '5.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '5.0' },
+          { assignmentId: '3', term1: '4.5', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.5' }
+        ],
+        '4': [
+          { assignmentId: '1', term1: '3.5', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '3.5' },
+          { assignmentId: '2', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' },
+          { assignmentId: '3', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' }
+        ],
+        '5': [
+          { assignmentId: '1', term1: '4.5', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.5' },
+          { assignmentId: '2', term1: '4.0', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.0' },
+          { assignmentId: '3', term1: '4.5', poprawa: '', obecnosc: 'Obecny', sprawozdanie: 'Zaliczone', ocena: '4.5' }
+        ]
+    },
+      solutions: {
+        '2': [
+          {
+            solution_id: '5',
+            user_id: '2',
+            grade: 4.0,
+            submission_date: new Date(),
+            review_comment: 'Dobra implementacja',
+            review_date: new Date()
+          },
+          {
+            solution_id: '6',
+            user_id: '2',
+            grade: 5.0,
+            submission_date: new Date(),
+            review_comment: 'Wzorowa implementacja',
+            review_date: new Date()
+          },
+          {
+            solution_id: '7',
+            user_id: '2',
+            grade: 4.5,
+            submission_date: new Date(),
+            review_comment: 'Bardzo dobra implementacja',
+            review_date: new Date()
+          }
+        ]
       }
-    };
-
-    fetchSubjectData();
-  }, [selectedSubject]);
+    }
+  });
 
   const handleAssignmentClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsModalOpen(true);
-  };
+};
 
   const handleSubjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSubject(event.target.value);
     setSelectedStudent(null);
   };
 
-  const handleAddSubject = async () => {
+  const handleAddSubject = () => {
     if (newSubjectName.trim()) {
-      try {
-        alert('Endpoint niezaimplementowany: POST /subjects');
-        const response = await fetch('http://localhost:8000/api/subjects', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            subject_name: newSubjectName
-          })
-        });
+      const newId = (Math.max(...subjects.map(s => parseInt(s.subject_id))) + 1).toString();
+      const newSubject: Subject = { 
+        subject_id: newId, 
+        subject_name: newSubjectName.trim(),
+        editor_role_id: '0' // Domyślna rola edytora
+      };
 
-        if (!response.ok) throw new Error('Failed to add subject');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error adding subject:', error);
-        alert('Błąd komunikacji z API');
-      }
+      setSubjects([...subjects, newSubject]);
+      setSubjectsData({
+        ...subjectsData,
+        [newId]: {
+          assignments: [],
+          studentAssignments: {},
+          solutions: {}
+        }
+      });
+      setNewSubjectName('');
+      setIsAddSubjectModalOpen(false);
     }
   };
 
-  const handleDeleteSubject = async () => {
+  const handleDeleteSubject = () => {
     if (selectedSubject) {
-      try {
-        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Failed to delete subject');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error deleting subject:', error);
-        alert('Błąd komunikacji z API');
-      }
+      setSubjects(subjects.filter(s => s.subject_id !== selectedSubject));
+      const newSubjectsData = { ...subjectsData };
+      delete newSubjectsData[selectedSubject];
+      setSubjectsData(newSubjectsData);
+      setSelectedSubject('');
     }
   };
 
@@ -223,170 +266,243 @@ export default function UserPage() {
     setSelectedStudent(studentId);
   };
 
-  const handleAddStudentToSubject = async (studentId: string) => {
+  const handleAddStudentToSubject = (studentId: string) => {
     if (selectedSubject && !subjectStudents[selectedSubject]?.includes(studentId)) {
-      try {
-        alert('Endpoint niezaimplementowany: POST /subjects/{id}/students');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            student_id: studentId
-          })
+      setSubjectStudents({
+        ...subjectStudents,
+        [selectedSubject]: [...(subjectStudents[selectedSubject] || []), studentId]
+      });
+
+      // Initialize empty assignment data for the new student
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        setSubjectsData({
+          ...subjectsData,
+          [selectedSubject]: {
+            ...subjectData,
+            studentAssignments: {
+              ...subjectData.studentAssignments,
+              [studentId]: subjectData.assignments.map(ex => ({
+                assignmentId: ex.assignment_id,
+                term1: '',
+                poprawa: '',
+                obecnosc: 'Nieobecny',
+                sprawozdanie: 'Niezaliczone',
+                ocena: ''
+              }))
+            },
+            solutions: {
+              ...subjectData.solutions,
+              [studentId]: subjectData.assignments.map(ex => ({
+                solution_id: Date.now().toString(),
+                user_id: studentId,
+                grade: undefined,
+                submission_date: new Date(),
+                review_comment: '',
+                review_date: undefined
+              }))
+            }
+          }
         });
-
-        if (!response.ok) throw new Error('Failed to add student to subject');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error adding student to subject:', error);
-        alert('Błąd komunikacji z API');
       }
     }
   };
 
-  const handleRemoveStudentFromSubject = async (studentId: string) => {
+  const handleRemoveStudentFromSubject = (studentId: string) => {
     if (selectedSubject) {
-      try {
-        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{studentId}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}`, {
-          method: 'DELETE',
-          credentials: 'include'
+      setSubjectStudents({
+        ...subjectStudents,
+        [selectedSubject]: subjectStudents[selectedSubject].filter(id => id !== studentId)
+      });
+
+      // Remove student's assignment data and solutions
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        const { [studentId]: removedAssignments, ...remainingStudentAssignments } = subjectData.studentAssignments;
+        const { [studentId]: removedSolutions, ...remainingSolutions } = subjectData.solutions;
+        
+        setSubjectsData({
+          ...subjectsData,
+          [selectedSubject]: {
+            ...subjectData,
+            studentAssignments: remainingStudentAssignments,
+            solutions: remainingSolutions
+          }
         });
-
-        if (!response.ok) throw new Error('Failed to remove student from subject');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error removing student from subject:', error);
-        alert('Błąd komunikacji z API');
       }
     }
   };
 
-  const handleAddAssignment = async () => {
+  const handleAddAssignment = () => {
     if (newAssignment.title.trim() && selectedSubject) {
-      try {
-        // Generate a unique assignment_id using timestamp and random string
-        const assignment_id = crypto.randomUUID();
+      const assignmentId = Date.now().toString();
+      const newAssignmentWithId = { ...newAssignment, assignment_id: assignmentId };
+      
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        // Add assignment to subject
+        const updatedAssignments = [...subjectData.assignments, newAssignmentWithId];
         
-        const response = await fetch('http://localhost:8000/api/assignments', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...newAssignment,
-            assignment_id,
-            subject_id: selectedSubject
-          })
+        // Add empty assignment data for all students
+        const updatedStudentAssignments = { ...subjectData.studentAssignments };
+        const updatedSolutions = { ...subjectData.solutions };
+        
+        Object.keys(updatedStudentAssignments).forEach(studentId => {
+          updatedStudentAssignments[studentId] = [
+            ...updatedStudentAssignments[studentId],
+            {
+              assignmentId,
+              term1: '',
+              poprawa: '',
+              obecnosc: 'Nieobecny',
+              sprawozdanie: 'Niezaliczone',
+              ocena: ''
+            }
+          ];
+          
+          updatedSolutions[studentId] = [
+            ...(updatedSolutions[studentId] || []),
+            {
+              solution_id: Date.now().toString(),
+              user_id: studentId,
+              grade: undefined,
+              submission_date: new Date(),
+              review_comment: '',
+              review_date: undefined
+            }
+          ];
         });
 
-        if (!response.ok) throw new Error('Failed to add assignment');
+        setSubjectsData({
+          ...subjectsData,
+          [selectedSubject]: {
+            assignments: updatedAssignments,
+            studentAssignments: updatedStudentAssignments,
+            solutions: updatedSolutions
+          }
+        });
+      }
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error adding assignment:', error);
-        alert('Błąd komunikacji z API');
+      setNewAssignment({ assignment_id: '', subject_id: '', title: '', description: '' });
+      setIsAddAssignmentModalOpen(false);
+    }
+  };
+
+  const handleDeleteAssignment = (assignmentId: string) => {
+    if (selectedSubject) {
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        // Remove assignment from subject
+        const updatedAssignments = subjectData.assignments.filter(ex => ex.assignment_id !== assignmentId);
+        
+        // Remove assignment data from all students
+        const updatedStudentAssignments = { ...subjectData.studentAssignments };
+        const updatedSolutions = { ...subjectData.solutions };
+        
+        Object.keys(updatedStudentAssignments).forEach(studentId => {
+          updatedStudentAssignments[studentId] = updatedStudentAssignments[studentId]
+            .filter(ex => ex.assignmentId !== assignmentId);
+          
+          updatedSolutions[studentId] = updatedSolutions[studentId]
+            .filter(s => s.solution_id !== assignmentId);
+        });
+
+        setSubjectsData({
+          ...subjectsData,
+          [selectedSubject]: {
+            assignments: updatedAssignments,
+            studentAssignments: updatedStudentAssignments,
+            solutions: updatedSolutions
+          }
+        });
       }
     }
   };
 
-  const handleDeleteAssignment = async (assignmentId: string) => {
+  const handleUpdateStudentAssignment = (studentId: string, assignmentId: string, field: keyof StudentAssignment, value: string) => {
     if (selectedSubject) {
-      try {
-        alert('Endpoint niezaimplementowany: DELETE /assignments/{id}');
-        const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Failed to delete assignment');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error deleting assignment:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
-
-  const handleUpdateStudentAssignment = async (studentId: string, assignmentId: string, field: keyof StudentAssignment, value: string) => {
-    if (selectedSubject) {
-      try {
-        alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{studentId}/assignments/{assignmentId}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}/assignments/${assignmentId}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        const updatedStudentAssignments = { ...subjectData.studentAssignments };
+        const studentAssignments = updatedStudentAssignments[studentId];
+        const assignmentIndex = studentAssignments.findIndex(ex => ex.assignmentId === assignmentId);
+        
+        if (assignmentIndex !== -1) {
+          // Validate grade input
+          if (field === 'term1' || field === 'poprawa' || field === 'ocena') {
+            const numValue = parseFloat(value);
+            if (value && (isNaN(numValue) || numValue < 2 || numValue > 5)) {
+              return; // Don't update if invalid grade
+            }
+          }
+          
+          studentAssignments[assignmentIndex] = {
+            ...studentAssignments[assignmentIndex],
             [field]: value
-          })
-        });
-
-        if (!response.ok) throw new Error('Failed to update student assignment');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error updating student assignment:', error);
-        alert('Błąd komunikacji z API');
+          };
+          
+          setSubjectsData({
+            ...subjectsData,
+            [selectedSubject]: {
+              ...subjectData,
+              studentAssignments: updatedStudentAssignments
+            }
+          });
+        }
       }
     }
   };
 
-  const handleViewReport = async (studentId: string, assignmentId: string) => {
+  const handleViewReport = (studentId: string, assignmentId: string) => {
     if (selectedSubject) {
-      try {
-        const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/students/${studentId}/solution`, {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch solution');
-        
-        const solution = await response.json();
-        setSelectedReport(solution);
-        setIsReportModalOpen(true);
-      } catch (error) {
-        console.error('Error fetching solution:', error);
-        alert('Błąd komunikacji z API');
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        const solution = subjectData.solutions[studentId]?.find(
+          s => s.solution_id === assignmentId
+        );
+        if (solution) {
+          setSelectedReport(solution);
+          setIsReportModalOpen(true);
+        } else {
+          alert('Nie znaleziono sprawozdania dla tego zadania.');
+        }
       }
     }
   };
 
-  const handleUpdateReport = async (field: keyof Solution, value: string | number | Date) => {
+  const handleUpdateReport = (field: keyof Solution, value: string | number | Date) => {
     if (selectedSubject && selectedStudent && selectedReport) {
-      try {
-        alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{studentId}/solution');
-        const response = await fetch(`http://localhost:8000/api/assignments/${selectedReport.solution_id}/students/${selectedStudent}/solution`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      const subjectData = subjectsData[selectedSubject];
+      if (subjectData) {
+        const updatedSolutions = { ...subjectData.solutions };
+        const studentSolutions = updatedSolutions[selectedStudent];
+        const solutionIndex = studentSolutions.findIndex(
+          s => s.solution_id === selectedReport.solution_id
+        );
+        
+        if (solutionIndex !== -1) {
+          studentSolutions[solutionIndex] = {
+            ...studentSolutions[solutionIndex],
             [field]: value
-          })
-        });
-
-        if (!response.ok) throw new Error('Failed to update report');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error updating report:', error);
-        alert('Błąd komunikacji z API');
+          };
+          
+          setSubjectsData({
+            ...subjectsData,
+            [selectedSubject]: {
+              ...subjectData,
+              solutions: updatedSolutions
+            }
+          });
+          
+          setSelectedReport(studentSolutions[solutionIndex]);
+        }
       }
     }
   };
 
   return (
     <div className={styles.dashboard}>
-      <h1 className={styles.title}>ADMIN PAGE --- TODO</h1>
+      <h1 className={styles.title}></h1>
       
       <div className={styles.subjectSelector}>
         <label htmlFor="subjectSelect">Wybierz przedmiot:</label>
@@ -642,27 +758,20 @@ export default function UserPage() {
             <h2>Sprawozdanie studenta</h2>
             <div className={styles.reportContent}>
               <div className={styles.reportSection}>
-                <h3>Sprawozdanie:</h3>
-                {selectedReport.solution_data ? (
-                  <button
-                    className={styles.downloadButton}
+                <h3>Treść sprawozdania:</h3>
+                <button
+                    className={styles.addButton}
                     onClick={() => {
-                      const blob = new Blob([selectedReport.solution_data!], { type: 'application/zip' });
+                      const blob = new Blob([selectedReport.solution_data!], { type: 'text/plain' });
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `sprawozdanie_${selectedStudent}_${selectedReport.solution_id}.zip`;
+                      a.download = `sprawozdanie_${selectedStudent}_${selectedReport.solution_id}.txt`;
                       document.body.appendChild(a);
                       a.click();
                       window.URL.revokeObjectURL(url);
                       document.body.removeChild(a);
-                    }}
-                  >
-                    Pobierz sprawozdanie (ZIP)
-                  </button>
-                ) : (
-                  <div>Brak sprawozdania</div>
-                )}
+                    }}>Pobierz sprawozdanie</button>
               </div>
               <div className={styles.reportSection}>
                 <h3>Komentarz profesora:</h3>
@@ -691,117 +800,3 @@ export default function UserPage() {
     </div>
   );
 }
-
-
-// RAW API ENDPOINTS DOCUMENTATION:
-
-// 1. GET /api/subjects
-//    Returns: Subject[]
-//    interface Subject {
-//      subject_id: string;
-//      subject_name?: string;
-//      editor_role_id: string;
-//    }
-
-// 2. GET /api/users
-//    Returns: User[]
-//    interface User {
-//      user_id: string;
-//      email: string;
-//      name: string;
-//      surname: string;
-//      student_id?: string;
-//      user_disabled: boolean;
-//      last_login_time?: Date;
-//      is_admin: boolean;
-//    }
-
-// 3. GET /api/subjects/{subject_id}
-//    Returns: {
-//      assignments: Assignment[];
-//    }
-//    interface Assignment {
-//      assignment_id: string;
-//      subject_id: string;
-//      title: string;
-//      description?: string;
-//      accepted_mime_types?: string;
-//    }
-
-// 4. GET /api/subjects/{subject_id}/student-assignments
-//    Returns: Record<string, StudentAssignment[]>
-//    interface StudentAssignment {
-//      assignmentId: string;
-//      term1: string;
-//      poprawa: string;
-//      obecnosc: string;
-//      sprawozdanie: string;
-//      ocena: string;
-//    }
-
-// 5. GET /api/subjects/{subject_id}/solutions
-//    Returns: Record<string, Solution[]>
-//    interface Solution {
-//      solution_id: string;
-//      user_id: string;
-//      grade?: number;
-//      submission_date?: Date;
-//      solution_data?: Uint8Array;
-//      reviewed_by?: string;
-//      review_comment?: string;
-//      review_date?: Date;
-//      mime_type?: string;
-//    }
-
-// 6. POST /api/subjects
-//    Body: {
-//      subject_name: string;
-//    }
-//    Returns: Subject
-
-// 7. DELETE /api/subjects/{subject_id}
-//    Returns: void
-
-// 8. POST /api/subjects/{subject_id}/students
-//    Body: {
-//      student_id: string;
-//    }
-//    Returns: void
-
-// 9. DELETE /api/subjects/{subject_id}/students/{student_id}
-//    Returns: void
-
-// 10. POST /api/assignments
-//     Body: {
-//       assignment_id: string;
-//       subject_id: string;
-//       title: string;
-//       description?: string;
-//       accepted_mime_types?: string;
-//     }
-//     Returns: Assignment
-
-// 11. DELETE /api/assignments/{assignment_id}
-//     Returns: void
-
-// 12. PUT /api/subjects/{subject_id}/students/{student_id}/assignments/{assignment_id}
-//     Na pole tzn. szczegółowe pole aktualizuje, nie cały obiekt.
-//     Body: {
-//       term1?: string;
-//       poprawa?: string;
-//       obecnosc?: string;
-//       sprawozdanie?: string;
-//       ocena?: string;
-//     }
-//     Returns: StudentAssignment
-
-// 13. GET /api/assignments/{assignment_id}/students/{student_id}/solution
-//     Returns: Solution
-
-// 14. PUT /api/assignments/{assignment_id}/students/{student_id}/solution
-//Na pole tzn. szczegółowe pole aktualizuje, nie cały obiekt.
-//     Body: {
-//       grade?: number;
-//       review_comment?: string;
-//     }
-//     Returns: Solution

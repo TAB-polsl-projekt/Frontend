@@ -174,6 +174,7 @@ export default function UserPage() {
 
   const handleAddSubject = async () => {
     if (newSubjectName.trim()) {
+      const subjectId = "test";
       try {
         const response = await fetch('http://localhost:8000/api/subjects', {
           method: 'POST',
@@ -181,9 +182,11 @@ export default function UserPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            subject_name: newSubjectName,
-          })
+        body: JSON.stringify({
+          subject_id: subjectId,
+          subject_name: newSubjectName, // może być też null
+          editor_role_id: "r3"
+        })
         });
 
         if (!response.ok) throw new Error('Failed to add subject');
@@ -199,7 +202,7 @@ export default function UserPage() {
   const handleDeleteSubject = async () => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}');
+        //('Endpoint niezaimplementowany: DELETE /subjects/{id}');
         const response = await fetch(`http://localhost:8000/api/subject/${selectedSubject}`, {
           method: 'DELETE',
           credentials: 'include'
@@ -219,35 +222,37 @@ export default function UserPage() {
     setSelectedStudent(studentId);
   };
 
-  const handleAddStudentToSubject = async (studentId: string) => {
-    if (selectedSubject && !subjectStudents[selectedSubject]?.includes(studentId)) {
-      try {
-        alert('Endpoint niezaimplementowany: POST /subjects/{id}/students');
-        const response = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/students`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: studentId
-          })
-        });
+const handleAddStudentToSubject = async (studentId: string) => {
+  if (selectedSubject && !subjectStudents[selectedSubject]?.includes(studentId)) {
+    try {
+      const response = await fetch(`http://localhost:8000/api/subjects/add-role`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: studentId,
+          subject_id: selectedSubject,
+          role_id: "r3" 
+        })
+      });
 
-        if (!response.ok) throw new Error('Failed to add student to subject');
+      if (!response.ok) throw new Error('Failed to add student to subject');
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error adding student to subject:', error);
-        alert('Błąd komunikacji z API');
-      }
+      window.location.reload();
+    } catch (error) {
+      console.error('Error adding student to subject:', error);
+      alert('Błąd komunikacji z API');
     }
-  };
+  }
+};
+
 
   const handleRemoveStudentFromSubject = async (studentId: string) => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{user_id}');
+        //alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{user_id}');
         const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}`, {
           method: 'DELETE',
           credentials: 'include'
@@ -295,7 +300,7 @@ export default function UserPage() {
   const handleDeleteAssignment = async (assignmentId: string) => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: DELETE /assignments/{id}');
+       // alert('Endpoint niezaimplementowany: DELETE /assignments/{id}');
         const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}`, {
           method: 'DELETE',
           credentials: 'include'
@@ -314,7 +319,7 @@ export default function UserPage() {
   const handleUpdateStudentAssignment = async (studentId: string, assignmentId: string, field: keyof StudentAssignment, value: string) => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{user_id}/assignments/{assignmentId}');
+       // alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{user_id}/assignments/{assignmentId}');
         const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}/assignments/${assignmentId}`, {
           method: 'PUT',
           credentials: 'include',
@@ -358,7 +363,7 @@ export default function UserPage() {
   const handleUpdateReport = async (field: keyof Solution, value: string | number | Date) => {
     if (selectedSubject && selectedStudent && selectedReport) {
       try {
-        alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{user_id}/solution');
+       // alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{user_id}/solution');
         const response = await fetch(`http://localhost:8000/api/assignments/${selectedReport.solution_id}/students/${selectedStudent}/solution`, {
           method: 'PUT',
           credentials: 'include',
@@ -382,7 +387,7 @@ export default function UserPage() {
 
   return (
     <div className={styles.dashboard}>
-      <h1 className={styles.title}>ADMIN PAGE --- TODO</h1>
+      <h1 className={styles.title}> </h1>
       
       <div className={styles.subjectSelector}>
         <label htmlFor="subjectSelect">Wybierz przedmiot:</label>

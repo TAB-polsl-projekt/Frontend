@@ -95,7 +95,6 @@ export default function UserPage() {
         setSubjects(subjectsData);
 
         // Fetch all users
-        alert('Endpoint niezaimplementowany: GET /users');
         const usersResponse = await fetch('http://localhost:8000/api/users', {
           credentials: 'include'
         });
@@ -132,8 +131,7 @@ export default function UserPage() {
         };
 
         // Fetch student assignments
-        alert('Endpoint niezaimplementowany: GET /subjects/{id}/student-assignments');
-        const studentAssignmentsResponse = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/student-assignments`, {
+        const studentAssignmentsResponse = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/student-assignments`, {
           credentials: 'include'
         });
         if (studentAssignmentsResponse.ok) {
@@ -142,8 +140,7 @@ export default function UserPage() {
         }
 
         // Fetch solutions
-        alert('Endpoint niezaimplementowany: GET /subjects/{id}/solutions');
-        const solutionsResponse = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/solutions`, {
+        const solutionsResponse = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/solutions`, {
           credentials: 'include'
         });
         if (solutionsResponse.ok) {
@@ -178,7 +175,6 @@ export default function UserPage() {
   const handleAddSubject = async () => {
     if (newSubjectName.trim()) {
       try {
-        alert('Endpoint niezaimplementowany: POST /subjects');
         const response = await fetch('http://localhost:8000/api/subjects', {
           method: 'POST',
           credentials: 'include',
@@ -186,13 +182,13 @@ export default function UserPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            subject_name: newSubjectName
+            subject_name: newSubjectName,
           })
         });
 
         if (!response.ok) throw new Error('Failed to add subject');
 
-        window.location.reload();
+        // window.location.reload();
       } catch (error) {
         console.error('Error adding subject:', error);
         alert('Błąd komunikacji z API');
@@ -204,7 +200,7 @@ export default function UserPage() {
     if (selectedSubject) {
       try {
         alert('Endpoint niezaimplementowany: DELETE /subjects/{id}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}`, {
+        const response = await fetch(`http://localhost:8000/api/subject/${selectedSubject}`, {
           method: 'DELETE',
           credentials: 'include'
         });
@@ -227,14 +223,14 @@ export default function UserPage() {
     if (selectedSubject && !subjectStudents[selectedSubject]?.includes(studentId)) {
       try {
         alert('Endpoint niezaimplementowany: POST /subjects/{id}/students');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students`, {
+        const response = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/students`, {
           method: 'POST',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            student_id: studentId
+            user_id: studentId
           })
         });
 
@@ -251,7 +247,7 @@ export default function UserPage() {
   const handleRemoveStudentFromSubject = async (studentId: string) => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{studentId}');
+        alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{user_id}');
         const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}`, {
           method: 'DELETE',
           credentials: 'include'
@@ -318,7 +314,7 @@ export default function UserPage() {
   const handleUpdateStudentAssignment = async (studentId: string, assignmentId: string, field: keyof StudentAssignment, value: string) => {
     if (selectedSubject) {
       try {
-        alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{studentId}/assignments/{assignmentId}');
+        alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{user_id}/assignments/{assignmentId}');
         const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}/assignments/${assignmentId}`, {
           method: 'PUT',
           credentials: 'include',
@@ -362,7 +358,7 @@ export default function UserPage() {
   const handleUpdateReport = async (field: keyof Solution, value: string | number | Date) => {
     if (selectedSubject && selectedStudent && selectedReport) {
       try {
-        alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{studentId}/solution');
+        alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{user_id}/solution');
         const response = await fetch(`http://localhost:8000/api/assignments/${selectedReport.solution_id}/students/${selectedStudent}/solution`, {
           method: 'PUT',
           credentials: 'include',
@@ -440,7 +436,7 @@ export default function UserPage() {
                   .filter(student => !subjectStudents[selectedSubject]?.includes(student.user_id))
                   .map(student => (
                     <option key={student.user_id} value={student.user_id}>
-                      {student.name} {student.surname} ({student.student_id})
+                      {student.name} {student.surname} ({student.user_id})
                     </option>
                   ))
                 }
@@ -457,7 +453,7 @@ export default function UserPage() {
                         className={styles.studentButton}
                         onClick={() => handleStudentSelect(student.user_id)}
                       >
-                        {student.name} {student.surname} ({student.student_id})
+                        {student.name} {student.surname} ({student.user_id})
                       </button>
                       <button 
                         className={styles.deleteButton}
@@ -691,117 +687,3 @@ export default function UserPage() {
     </div>
   );
 }
-
-
-// RAW API ENDPOINTS DOCUMENTATION:
-
-// 1. GET /api/subjects
-//    Returns: Subject[]
-//    interface Subject {
-//      subject_id: string;
-//      subject_name?: string;
-//      editor_role_id: string;
-//    }
-
-// 2. GET /api/users
-//    Returns: User[]
-//    interface User {
-//      user_id: string;
-//      email: string;
-//      name: string;
-//      surname: string;
-//      student_id?: string;
-//      user_disabled: boolean;
-//      last_login_time?: Date;
-//      is_admin: boolean;
-//    }
-
-// 3. GET /api/subjects/{subject_id}
-//    Returns: {
-//      assignments: Assignment[];
-//    }
-//    interface Assignment {
-//      assignment_id: string;
-//      subject_id: string;
-//      title: string;
-//      description?: string;
-//      accepted_mime_types?: string;
-//    }
-
-// 4. GET /api/subjects/{subject_id}/student-assignments
-//    Returns: Record<string, StudentAssignment[]>
-//    interface StudentAssignment {
-//      assignmentId: string;
-//      term1: string;
-//      poprawa: string;
-//      obecnosc: string;
-//      sprawozdanie: string;
-//      ocena: string;
-//    }
-
-// 5. GET /api/subjects/{subject_id}/solutions
-//    Returns: Record<string, Solution[]>
-//    interface Solution {
-//      solution_id: string;
-//      user_id: string;
-//      grade?: number;
-//      submission_date?: Date;
-//      solution_data?: Uint8Array;
-//      reviewed_by?: string;
-//      review_comment?: string;
-//      review_date?: Date;
-//      mime_type?: string;
-//    }
-
-// 6. POST /api/subjects
-//    Body: {
-//      subject_name: string;
-//    }
-//    Returns: Subject
-
-// 7. DELETE /api/subjects/{subject_id}
-//    Returns: void
-
-// 8. POST /api/subjects/{subject_id}/students
-//    Body: {
-//      student_id: string;
-//    }
-//    Returns: void
-
-// 9. DELETE /api/subjects/{subject_id}/students/{student_id}
-//    Returns: void
-
-// 10. POST /api/assignments
-//     Body: {
-//       assignment_id: string;
-//       subject_id: string;
-//       title: string;
-//       description?: string;
-//       accepted_mime_types?: string;
-//     }
-//     Returns: Assignment
-
-// 11. DELETE /api/assignments/{assignment_id}
-//     Returns: void
-
-// 12. PUT /api/subjects/{subject_id}/students/{student_id}/assignments/{assignment_id}
-//     Na pole tzn. szczegółowe pole aktualizuje, nie cały obiekt.
-//     Body: {
-//       term1?: string;
-//       poprawa?: string;
-//       obecnosc?: string;
-//       sprawozdanie?: string;
-//       ocena?: string;
-//     }
-//     Returns: StudentAssignment
-
-// 13. GET /api/assignments/{assignment_id}/students/{student_id}/solution
-//     Returns: Solution
-
-// 14. PUT /api/assignments/{assignment_id}/students/{student_id}/solution
-//Na pole tzn. szczegółowe pole aktualizuje, nie cały obiekt.
-//     Body: {
-//       grade?: number;
-//       review_comment?: string;
-//     }
-//     Returns: Solution

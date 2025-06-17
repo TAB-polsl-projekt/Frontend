@@ -1,694 +1,914 @@
 // src/app/(user)/userPage/page.tsx
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import styles from '@/styles/adminPage.module.css';
-import Modal from '@/components/ui/Modals/Generic';
+import React, { useState, useEffect } from "react";
+import styles from "@/styles/adminPage.module.css";
+import Modal from "@/components/ui/Modals/Generic";
 
-// Backend models
-interface User {
-  user_id: string;
-  email: string;
-  name: string;
-  surname: string;
-  student_id?: string;
-  user_disabled: boolean;
-  last_login_time?: Date;
-  is_admin: boolean;
-}
-
-interface Assignment {
-  assignment_id: string;
-  subject_id: string;
-  title: string;
-  description?: string;
-  accepted_mime_types?: string;
-}
-
-interface Subject {
-  subject_id: string;
-  subject_name?: string;
-  editor_role_id: string;
-}
-
-interface Solution {
-  solution_id: string;
-  user_id: string;
-  grade?: number;
-  submission_date?: Date;
-  solution_data?: Uint8Array;
-  reviewed_by?: string;
-  review_comment?: string;
-  review_date?: Date;
-  mime_type?: string;
-}
-
-// Frontend specific types (not from backend)
-interface StudentAssignment {
-  assignmentId: string;
-  term1: string;
-  poprawa: string;
-  obecnosc: string;
-  sprawozdanie: string;
-  ocena: string;
-}
-
-interface SubjectData {
-  assignments: Assignment[];
-  studentAssignments: Record<string, StudentAssignment[]>;
-  solutions: Record<string, Solution[]>;
-}
-
-export default function UserPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
-  const [isAddAssignmentModalOpen, setIsAddAssignmentModalOpen] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<Solution | null>(null);
-  const [newSubjectName, setNewSubjectName] = useState('');
-  const [newAssignment, setNewAssignment] = useState<Assignment>({
-    assignment_id: '',
-    subject_id: '',
-    title: '',
-    description: ''
-  });
-
-  // State for API data
-  const [students, setStudents] = useState<User[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectsData, setSubjectsData] = useState<Record<string, SubjectData>>({});
-  const [subjectStudents, setSubjectStudents] = useState<Record<string, string[]>>({});
-
-  // Fetch initial data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // Fetch subjects
-        const subjectsResponse = await fetch('http://localhost:8000/api/subjects', {
-          credentials: 'include'
-        });
-        if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
-        const subjectsData = await subjectsResponse.json();
-        setSubjects(subjectsData);
-
-        // Fetch all users
-        const usersResponse = await fetch('http://localhost:8000/api/users', {
-          credentials: 'include'
-        });
-        if (!usersResponse.ok) throw new Error('Failed to fetch users');
-        const usersData = await usersResponse.json();
-        setStudents(usersData);
-
-      } catch (error) {
-        console.error('Error fetching initial data:', error);
-        alert('Błąd komunikacji z API');
-      }
-    };
-
-    fetchInitialData();
-  }, []);
-
-  // Fetch subject data when selected
-  useEffect(() => {
-    const fetchSubjectData = async () => {
-      if (!selectedSubject) return;
-
-      try {
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}`, {
-          credentials: 'include'
-        });
-        if (!response.ok) throw new Error('Failed to fetch subject data');
-        const data = await response.json();
-        
-        // Transform API data to match our frontend structure
-        const subjectData: SubjectData = {
-          assignments: data.assignments,
-          studentAssignments: {}, // Will be populated from API
-          solutions: {} // Will be populated from API
-        };
-
-        // Fetch student assignments
-        const studentAssignmentsResponse = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/student-assignments`, {
-          credentials: 'include'
-        });
-        if (studentAssignmentsResponse.ok) {
-          const studentAssignmentsData = await studentAssignmentsResponse.json();
-          subjectData.studentAssignments = studentAssignmentsData;
-        }
-
-        // Fetch solutions
-        const solutionsResponse = await fetch(`http://localhost:8000/api/subject/${selectedSubject}/solutions`, {
-          credentials: 'include'
-        });
-        if (solutionsResponse.ok) {
-          const solutionsData = await solutionsResponse.json();
-          subjectData.solutions = solutionsData;
-        }
-        
-        setSubjectsData(prev => ({
-          ...prev,
-          [selectedSubject]: subjectData
-        }));
-
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-        alert('Błąd komunikacji z API');
-      }
-    };
-
-    fetchSubjectData();
-  }, [selectedSubject]);
-
-  const handleAssignmentClick = (assignment: Assignment) => {
-    setSelectedAssignment(assignment);
-    setIsModalOpen(true);
-  };
-
-  const handleSubjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedSubject(event.target.value);
-    setSelectedStudent(null);
-  };
-
-  const handleAddSubject = async () => {
-    if (newSubjectName.trim()) {
-      const subjectId = "test";
-      try {
-        const response = await fetch('http://localhost:8000/api/subjects', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        body: JSON.stringify({
-          subject_id: subjectId,
-          subject_name: newSubjectName, // może być też null
-          editor_role_id: "r3"
-        })
-        });
-
-        if (!response.ok) throw new Error('Failed to add subject');
-
-        // window.location.reload();
-      } catch (error) {
-        console.error('Error adding subject:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
-
-  const handleDeleteSubject = async () => {
-    if (selectedSubject) {
-      try {
-        //('Endpoint niezaimplementowany: DELETE /subjects/{id}');
-        const response = await fetch(`http://localhost:8000/api/subject/${selectedSubject}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Failed to delete subject');
-
-        window.location.reload();
-      } catch (error) {
-        console.error('Error deleting subject:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
-
-  const handleStudentSelect = (studentId: string) => {
-    setSelectedStudent(studentId);
-  };
-
-const handleAddStudentToSubject = async (studentId: string) => {
-  if (selectedSubject && !subjectStudents[selectedSubject]?.includes(studentId)) {
-    try {
-      const response = await fetch(`http://localhost:8000/api/subjects/add-role`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: studentId,
-          subject_id: selectedSubject,
-          role_id: "r3" 
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to add student to subject');
-
-      window.location.reload();
-    } catch (error) {
-      console.error('Error adding student to subject:', error);
-      alert('Błąd komunikacji z API');
-    }
-  }
+type Subject = {
+	subject_id: string;
+	subject_name: string;
 };
 
+type Assignment = {
+	assignment_id: string;
+	subject_id: string;
+	title: string;
+	description: string;
+	accepted_mime_types: string;
+};
 
-  const handleRemoveStudentFromSubject = async (studentId: string) => {
-    if (selectedSubject) {
-      try {
-        //alert('Endpoint niezaimplementowany: DELETE /subjects/{id}/students/{user_id}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+type User = {
+	user_id: string;
+	email: string;
+	name: string;
+	surname: string;
+};
 
-        if (!response.ok) throw new Error('Failed to remove student from subject');
+type NewSubjectForm = {
+	subject_name: string;
+};
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error removing student from subject:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+type NewAssignmentForm = {
+	title: string;
+	description: string;
+	accepted_mime_types: string;
+};
 
-  const handleAddAssignment = async () => {
-    if (newAssignment.title.trim() && selectedSubject) {
-      try {
-        // Generate a unique assignment_id using timestamp and random string
-        const assignment_id = crypto.randomUUID();
-        
-        const response = await fetch('http://localhost:8000/api/assignments', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...newAssignment,
-            assignment_id,
-            subject_id: selectedSubject
-          })
-        });
+type Solution = {
+	solution_id: string;
+	assignment_id: string;
+	grade?: number;
+	submission_date: number;
+	solution_data: string;
+	review_comment?: string;
+	review_date?: string;
+	mime_type: string;
+};
 
-        if (!response.ok) throw new Error('Failed to add assignment');
+export default function AdminPage() {
+	const baseApiUrl = "http://127.0.0.1:5000/api";
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error adding assignment:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+	// API State
+	const [apiSubjects, setApiSubjects] = useState<Subject[]>([]);
+	const [apiSubjectAssignments, setApiSubjectAssignments] = useState<
+		Assignment[]
+	>([]);
 
-  const handleDeleteAssignment = async (assignmentId: string) => {
-    if (selectedSubject) {
-      try {
-       // alert('Endpoint niezaimplementowany: DELETE /assignments/{id}');
-        const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+	const [apiSubjectEnrolledUsers, setApiSubjectEnrolledUsers] = useState<
+		User[]
+	>([]);
 
-        if (!response.ok) throw new Error('Failed to delete assignment');
+	const [apiSubjectNotEnrolledUsers, setApiSubjectNotEnrolledUsers] =
+		useState<User[]>([]);
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error deleting assignment:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+	const [
+		apiSubjectUserAssignmentSolution,
+		setApiSubjectUserAssignmentSolution,
+	] = useState<Solution | null>(null);
 
-  const handleUpdateStudentAssignment = async (studentId: string, assignmentId: string, field: keyof StudentAssignment, value: string) => {
-    if (selectedSubject) {
-      try {
-       // alert('Endpoint niezaimplementowany: PUT /subjects/{id}/students/{user_id}/assignments/{assignmentId}');
-        const response = await fetch(`http://localhost:8000/api/subjects/${selectedSubject}/students/${studentId}/assignments/${assignmentId}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            [field]: value
-          })
-        });
+	// Frontend State
+	const [subject, setSubject] = useState<Subject>();
+	const [subjectUser, setSubjectUser] = useState<User | null>(null);
 
-        if (!response.ok) throw new Error('Failed to update student assignment');
+	const [subjectNewAssignment, setSubjectNewAssignment] =
+		useState<NewAssignmentForm>({
+			title: "",
+			description: "",
+			accepted_mime_types: "",
+		});
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error updating student assignment:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+	const [newSubject, setNewSubject] = useState<NewSubjectForm>({
+		subject_name: "",
+	});
 
-  const handleViewReport = async (studentId: string, assignmentId: string) => {
-    if (selectedSubject) {
-      try {
-        const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/students/${studentId}/solution`, {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch solution');
-        
-        const solution = await response.json();
-        setSelectedReport(solution);
-        setIsReportModalOpen(true);
-      } catch (error) {
-        console.error('Error fetching solution:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+	const [isNewSubjectModalOpen, setIsNewSubjectModalOpen] =
+		useState<boolean>(false);
 
-  const handleUpdateReport = async (field: keyof Solution, value: string | number | Date) => {
-    if (selectedSubject && selectedStudent && selectedReport) {
-      try {
-       // alert('Endpoint niezaimplementowany: PUT /assignments/{id}/students/{user_id}/solution');
-        const response = await fetch(`http://localhost:8000/api/assignments/${selectedReport.solution_id}/students/${selectedStudent}/solution`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            [field]: value
-          })
-        });
+	const [isAddAssignmentModalOpen, setIsAddAssignmentModalOpen] =
+		useState<boolean>(false);
 
-        if (!response.ok) throw new Error('Failed to update report');
+	const [isUserSolutionModalOpen, setIsUserSolutionModalOpen] =
+		useState<boolean>(false);
 
-        window.location.reload();
-      } catch (error) {
-        console.error('Error updating report:', error);
-        alert('Błąd komunikacji z API');
-      }
-    }
-  };
+	const fetchSubjects = async (): Promise<Subject[]> => {
+		const res = await fetch(`${baseApiUrl}/subjects`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
 
-  return (
-    <div className={styles.dashboard}>
-      <h1 className={styles.title}> </h1>
-      
-      <div className={styles.subjectSelector}>
-        <label htmlFor="subjectSelect">Wybierz przedmiot:</label>
-        <select 
-          id="subjectSelect"
-          value={selectedSubject}
-          onChange={handleSubjectChange}
-          className={styles.select}
-        >
-          <option value="">-- Wybierz przedmiot --</option>
-          {subjects.map((subject) => (
-            <option key={subject.subject_id} value={subject.subject_id}>
-              {subject.subject_name}
-            </option>
-          ))}
-        </select>
-        <button 
-          className={styles.addButton}
-          onClick={() => setIsAddSubjectModalOpen(true)}
-        >
-          Dodaj przedmiot
-        </button>
-        <button 
-          className={styles.deleteButton}
-          onClick={handleDeleteSubject}
-          disabled={!selectedSubject}
-        >
-          Usuń przedmiot
-        </button>
-        <button 
-          className={styles.addButton}
-          onClick={() => setIsAddAssignmentModalOpen(true)}
-          disabled={!selectedSubject}
-        >
-          Dodaj zadanie
-        </button>
-      </div>
+		if (!res.ok) {
+			alert("Błąd pobierania przedmiotów");
+			return [];
+		}
 
-      {selectedSubject && (
-        <div className={styles.studentManagement}>
-          <div className={styles.studentSelector}>
-            <h3>Zarządzanie studentami</h3>
-            <div className={styles.studentControls}>
-              <select 
-                className={styles.select}
-                onChange={(e) => handleAddStudentToSubject(e.target.value)}
-                value=""
-              >
-                <option value="">-- Dodaj studenta --</option>
-                {students
-                  .filter(student => !subjectStudents[selectedSubject]?.includes(student.user_id))
-                  .map(student => (
-                    <option key={student.user_id} value={student.user_id}>
-                      {student.name} {student.surname} ({student.user_id})
-                    </option>
-                  ))
-                }
-              </select>
-            </div>
-            <div className={styles.studentList}>
-              <h4>Lista studentów na przedmiocie:</h4>
-              <ul>
-                {subjectStudents[selectedSubject]?.map(studentId => {
-                  const student = students.find(s => s.user_id === studentId);
-                  return student ? (
-                    <li key={student.user_id} className={styles.studentItem}>
-                      <button 
-                        className={styles.studentButton}
-                        onClick={() => handleStudentSelect(student.user_id)}
-                      >
-                        {student.name} {student.surname} ({student.user_id})
-                      </button>
-                      <button 
-                        className={styles.deleteButton}
-                        onClick={() => handleRemoveStudentFromSubject(student.user_id)}
-                      >
-                        Usuń
-                      </button>
-                    </li>
-                  ) : null;
-                })}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+		return await res.json();
+	};
 
-      {selectedSubject && selectedStudent && (
-        <div className={styles.studentGrades}>
-          <h3>Oceny studenta: {students.find(s => s.user_id === selectedStudent)?.name} {students.find(s => s.user_id === selectedStudent)?.surname}</h3>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-                <th>Zadanie</th>
-            <th>Termin 1</th>
-            <th>Poprawa</th>
-            <th>Obecność</th>
-            <th>Sprawozdanie</th>
-            <th>Ocena</th>
-                <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-              {subjectsData[selectedSubject]?.assignments.map((assignment) => {
-                const studentAssignment = subjectsData[selectedSubject]?.studentAssignments[selectedStudent]?.find(
-                  ex => ex.assignmentId === assignment.assignment_id
-                );
-                return (
-                  <tr key={assignment.assignment_id}>
-                    <td>
-                      <button className={styles.linkButton} onClick={() => handleAssignmentClick(assignment)}>
-                        {assignment.title}
-              </button>
-            </td>
-                    <td>
-                      <input
-                        type="number"
-                        min="2"
-                        max="5"
-                        step="0.5"
-                        value={studentAssignment?.term1 || ''}
-                        onChange={(e) => handleUpdateStudentAssignment(selectedStudent, assignment.assignment_id, 'term1', e.target.value)}
-                        className={styles.gradeInput}
-                      />
-            </td>
-                    <td>
-                      <input
-                        type="number"
-                        min="2"
-                        max="5"
-                        step="0.5"
-                        value={studentAssignment?.poprawa || ''}
-                        onChange={(e) => handleUpdateStudentAssignment(selectedStudent, assignment.assignment_id, 'poprawa', e.target.value)}
-                        className={styles.gradeInput}
-                      />
-            </td>
-                    <td>
-                      <select
-                        value={studentAssignment?.obecnosc || 'Nieobecny'}
-                        onChange={(e) => handleUpdateStudentAssignment(selectedStudent, assignment.assignment_id, 'obecnosc', e.target.value)}
-                        className={styles.select}
-                      >
-                        <option value="Obecny">Obecny</option>
-                        <option value="Nieobecny">Nieobecny</option>
-                      </select>
-            </td>
-                    <td>
-                      <select
-                        value={studentAssignment?.sprawozdanie || 'Niezaliczone'}
-                        onChange={(e) => handleUpdateStudentAssignment(selectedStudent, assignment.assignment_id, 'sprawozdanie', e.target.value)}
-                        className={styles.select}
-                      >
-                        <option value="Zaliczone">Zaliczone</option>
-                        <option value="Niezaliczone">Niezaliczone</option>
-                      </select>
-            </td>
-                    <td>
-                      <input
-                        type="number"
-                        min="2"
-                        max="5"
-                        step="0.5"
-                        value={studentAssignment?.ocena || ''}
-                        onChange={(e) => handleUpdateStudentAssignment(selectedStudent, assignment.assignment_id, 'ocena', e.target.value)}
-                        className={styles.gradeInput}
-                      />
-            </td>
-                    <td>
-                      <div className={styles.actionButtons}>
-                        <button 
-                          className={styles.viewButton}
-                          onClick={() => handleViewReport(selectedStudent, assignment.assignment_id)}
-                        >
-                          Sprawdź sprawozdanie
-              </button>
-                        <button 
-                          className={styles.deleteButton}
-                          onClick={() => handleDeleteAssignment(assignment.assignment_id)}
-                        >
-                          Usuń
-              </button>
-                      </div>
-            </td>
-          </tr>
-                );
-              })}
-        </tbody>
-      </table>
-        </div>
-      )}
+	const fetchSubjectAssignments = async (
+		subjectId: string
+	): Promise<Assignment[]> => {
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subjectId}/assignments`,
+			{
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
 
-      {isModalOpen && selectedAssignment && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <h2>{selectedAssignment.title}</h2>
-          <p>{selectedAssignment.description}</p>
-        </Modal>
-      )}
+		if (!res.ok) {
+			alert("Błąd pobierania ćwiczeń");
+			return [];
+		}
 
-      {isAddSubjectModalOpen && (
-        <Modal onClose={() => setIsAddSubjectModalOpen(false)}>
-          <h2>Dodaj nowy przedmiot</h2>
-          <div className={styles.modalContent}>
-            <input
-              type="text"
-              value={newSubjectName}
-              onChange={(e) => setNewSubjectName(e.target.value)}
-              placeholder="Nazwa przedmiotu"
-              className={styles.input}
-            />
-            <button 
-              className={styles.addButton}
-              onClick={handleAddSubject}
-              disabled={!newSubjectName.trim()}
-            >
-              Dodaj
-            </button>
-          </div>
-        </Modal>
-      )}
+		return await res.json();
+	};
 
-      {isAddAssignmentModalOpen && (
-        <Modal onClose={() => setIsAddAssignmentModalOpen(false)}>
-          <h2>Dodaj nowe zadanie</h2>
-          <div className={styles.modalContent}>
-            <input
-              type="text"
-              value={newAssignment.title}
-              onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-              placeholder="Nazwa zadania"
-              className={styles.input}
-            />
-            <textarea
-              value={newAssignment.description}
-              onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-              placeholder="Opis zadania"
-              className={styles.textarea}
-              rows={4}
-            />
-            <button 
-              className={styles.addButton}
-              onClick={handleAddAssignment}
-              disabled={!newAssignment.title.trim()}
-            >
-              Dodaj
-            </button>
-          </div>
-        </Modal>
-      )}
+	const fetchSubjectEnrolledUsers = async (
+		subjectId: string
+	): Promise<User[]> => {
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subjectId}/users/enrolled`,
+			{
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
 
-      {isReportModalOpen && selectedReport && (
-        <Modal onClose={() => setIsReportModalOpen(false)}>
-          <div className={styles.reportModal}>
-            <h2>Sprawozdanie studenta</h2>
-            <div className={styles.reportContent}>
-              <div className={styles.reportSection}>
-                <h3>Sprawozdanie:</h3>
-                {selectedReport.solution_data ? (
-                  <button
-                    className={styles.downloadButton}
-                    onClick={() => {
-                      const blob = new Blob([selectedReport.solution_data!], { type: 'application/zip' });
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `sprawozdanie_${selectedStudent}_${selectedReport.solution_id}.zip`;
-                      document.body.appendChild(a);
-                      a.click();
-                      window.URL.revokeObjectURL(url);
-                      document.body.removeChild(a);
-                    }}
-                  >
-                    Pobierz sprawozdanie (ZIP)
-                  </button>
-                ) : (
-                  <div>Brak sprawozdania</div>
-                )}
-              </div>
-              <div className={styles.reportSection}>
-                <h3>Komentarz profesora:</h3>
-                <textarea
-                  value={selectedReport.review_comment || ''}
-                  onChange={(e) => handleUpdateReport('review_comment', e.target.value)}
-                  className={styles.reportTextarea}
-                  rows={4}
-                  placeholder="Dodaj komentarz do sprawozdania..."
-                />
-              </div>
-              <div className={styles.reportSection}>
-                <h3>Ocena sprawozdania:</h3>
-                <input
-                  type="text"
-                  value={selectedReport.grade || ''}
-                  onChange={(e) => handleUpdateReport('grade', parseFloat(e.target.value))}
-                  className={styles.gradeInput}
-                  placeholder="Ocena"
-                />
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+		if (!res.ok) {
+			alert("Błąd pobierania zapisanych użytkowników");
+			return [];
+		}
+
+		return await res.json();
+	};
+
+	const fetchSubjectNotEnrolledUsers = async (
+		subjectId: string
+	): Promise<User[]> => {
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subjectId}/users/not-enrolled`,
+			{
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (!res.ok) {
+			alert("Błąd pobierania niezapisanych użytkowników");
+			return [];
+		}
+
+		return await res.json();
+	};
+
+	const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const selectedSubject: Subject = JSON.parse(e.target.value);
+
+		setSubject(selectedSubject);
+		setSubjectUser(null);
+	};
+
+	const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const selectedUser: User = JSON.parse(e.target.value);
+
+		setSubjectUser(selectedUser);
+	};
+
+	const addUserToSubject = async () => {
+		if (!subject || !subjectUser) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subject.subject_id}/users/${subjectUser.user_id}`,
+			{
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (res.ok) {
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectEnrolledUsers(users)
+			);
+
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectNotEnrolledUsers(users)
+			);
+		} else {
+			alert("Błąd dodawania użytkownika do przedmiotu");
+		}
+	};
+
+	const removeUserFromSubject = async () => {
+		if (!subject || !subjectUser) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subject.subject_id}/users/${subjectUser.user_id}`,
+			{
+				method: "DELETE",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (res.ok) {
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectEnrolledUsers(users)
+			);
+
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectNotEnrolledUsers(users)
+			);
+
+			setSubjectUser(null);
+		} else {
+			alert("Błąd usuwania użytkownika z przedmiotu");
+		}
+	};
+
+	const addAssignmentToSubject = async () => {
+		if (!subject) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subject.subject_id}/assignments`,
+			{
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(subjectNewAssignment),
+			}
+		);
+
+		if (res.ok) {
+			fetchSubjectAssignments(subject.subject_id).then((assignments) =>
+				setApiSubjectAssignments(assignments)
+			);
+
+			setIsAddAssignmentModalOpen(false);
+
+			setSubjectNewAssignment({
+				title: "",
+				description: "",
+				accepted_mime_types: "",
+			});
+		} else {
+			alert("Błąd tworzenia ćwiczenia");
+		}
+	};
+
+	const handleNewAssignmentChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+
+		setSubjectNewAssignment({ ...subjectNewAssignment, [name]: value });
+	};
+
+	const deleteAssignmentFromSubject = async (assignmentId: string) => {
+		if (!subject) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/subjects/${subject.subject_id}/assignments/${assignmentId}`,
+			{
+				method: "DELETE",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (res.ok) {
+			fetchSubjectAssignments(subject.subject_id).then((assignments) =>
+				setApiSubjectAssignments(assignments)
+			);
+		} else {
+			alert("Błąd usuwania ćwiczenia");
+		}
+	};
+
+	const viewUserSolution = async (assignmentId: string) => {
+		if (!subject || !subjectUser) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/users/${subjectUser.user_id}/assignments/${assignmentId}/solution`,
+			{
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (res.ok) {
+			const solution: Solution = await res.json();
+
+			setApiSubjectUserAssignmentSolution(solution);
+			setIsUserSolutionModalOpen(true);
+		} else {
+			alert("Błąd pobierania sprawozdania użytkownika.");
+
+			setApiSubjectUserAssignmentSolution(null);
+			setIsUserSolutionModalOpen(false);
+		}
+	};
+
+	const handleSolutionUpdate = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		if (!apiSubjectUserAssignmentSolution) {
+			return;
+		}
+
+		let { name, value } = e.target;
+
+		if (name === "grade") {
+			// @ts-expect-error ...
+			value = Number(value);
+
+			// @ts-expect-error ...
+			if (value < 2 || value > 5) {
+				return;
+			}
+		}
+
+		setApiSubjectUserAssignmentSolution({
+			...apiSubjectUserAssignmentSolution,
+			[name]: value,
+		});
+	};
+
+	const updateUserAssignmentSolution = async (assignmentId: string) => {
+		if (!subject || !subjectUser) return;
+
+		const res = await fetch(
+			`${baseApiUrl}/users/${subjectUser.user_id}/assignments/${assignmentId}/solution`,
+			{
+				method: "PUT",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(apiSubjectUserAssignmentSolution),
+			}
+		);
+
+		if (res.ok) {
+			setIsUserSolutionModalOpen(false);
+		} else {
+			alert("Błąd aktualizowania sprawozdania użytkownika.");
+		}
+	};
+
+	const createSubject = async () => {
+		const res = await fetch(`${baseApiUrl}/subjects`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(newSubject),
+		});
+
+		if (res.ok) {
+			fetchSubjects().then((subjects) => setApiSubjects(subjects));
+
+			setIsNewSubjectModalOpen(false);
+
+			setNewSubject({
+				subject_name: "",
+			});
+		} else {
+			alert("Błąd tworzenia przedmoitu");
+		}
+	};
+
+	const handleNewSubjectChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+
+		setNewSubject({ ...newSubject, [name]: value });
+	};
+
+	const deleteSubject = async () => {
+		if (!subject) return;
+
+		const res = await fetch(`${baseApiUrl}/subject/${subject.subject_id}`, {
+			method: "DELETE",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (res.ok) {
+			setSubject(undefined);
+			fetchSubjects().then((subjects) => setApiSubjects(subjects));
+		} else {
+			alert("Błąd usuwania przedmoitu");
+		}
+	};
+
+	useEffect(() => {
+		fetchSubjects().then((subjects) => setApiSubjects(subjects));
+	}, []);
+
+	useEffect(() => {
+		if (subject) {
+			fetchSubjectAssignments(subject.subject_id).then((assignments) =>
+				setApiSubjectAssignments(assignments)
+			);
+
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectEnrolledUsers(users)
+			);
+
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectNotEnrolledUsers(users)
+			);
+		}
+	}, [subject]);
+
+	return (
+		<div className={styles.wrapper}>
+			<div className={styles.groupSpaceBetween}>
+				<p>Wybierz przedmiot ktorym chcesz zarzadzac</p>
+
+				<div className={styles.groupLocal}>
+					<button
+						className={`${styles.button} ${styles.buttonGreen}`}
+						onClick={() => setIsNewSubjectModalOpen(true)}
+					>
+						Utwórz nowy przedmiot
+					</button>
+
+					<button
+						className={`${styles.button} ${styles.buttonRed}`}
+						onClick={deleteSubject}
+						disabled={!subject}
+					>
+						Usuń przedmiot
+					</button>
+				</div>
+			</div>
+
+			<select
+				className={styles.button}
+				value={subject ? JSON.stringify(subject) : ""}
+				onChange={handleSubjectChange}
+			>
+				<option value="" disabled>
+					Wybierz przedmiot
+				</option>
+
+				{apiSubjects.map((subject) => (
+					<option
+						key={subject.subject_id}
+						value={JSON.stringify(subject)}
+					>
+						{subject.subject_name}
+					</option>
+				))}
+			</select>
+
+			{subject && (
+				<div className={styles.section}>
+					<p>Wybrano przedmiot: {subject.subject_name}</p>
+
+					<div className={styles.section}>
+						<div className={styles.groupSpaceBetween}>
+							<p>Studenci</p>
+
+							<div className={styles.groupLocal}>
+								<select
+									className={styles.button}
+									value={
+										subjectUser
+											? JSON.stringify(subjectUser)
+											: ""
+									}
+									onChange={handleUserChange}
+								>
+									<option value="" disabled>
+										Wybierz studenta
+									</option>
+
+									<optgroup label="Zapisani studenci">
+										{apiSubjectEnrolledUsers.map((user) => (
+											<option
+												key={user.user_id}
+												value={JSON.stringify(user)}
+											>
+												{user.name} {user.surname} (
+												{user.email})
+											</option>
+										))}
+									</optgroup>
+
+									<optgroup label="Niezapisani studenci">
+										{apiSubjectNotEnrolledUsers.map(
+											(user) => (
+												<option
+													key={user.user_id}
+													value={JSON.stringify(user)}
+												>
+													{user.name} {user.surname} (
+													{user.email})
+												</option>
+											)
+										)}
+									</optgroup>
+								</select>
+
+								<button
+									className={`${styles.button} ${styles.buttonGreen}`}
+									onClick={addUserToSubject}
+									disabled={
+										!subjectUser ||
+										apiSubjectEnrolledUsers.some(
+											(u) =>
+												u.user_id ===
+												subjectUser.user_id
+										)
+									}
+								>
+									Dodaj studenta
+								</button>
+
+								<button
+									className={`${styles.button} ${styles.buttonRed}`}
+									onClick={removeUserFromSubject}
+									disabled={
+										!subjectUser ||
+										!apiSubjectEnrolledUsers.some(
+											(u) =>
+												u.user_id ===
+												subjectUser.user_id
+										)
+									}
+								>
+									Usuń wybranego studenta
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div className={styles.section}>
+						<div className={styles.groupSpaceBetween}>
+							<p>Cwiczenia</p>
+
+							<button
+								className={`${styles.button} ${styles.buttonGreen}`}
+								onClick={() =>
+									setIsAddAssignmentModalOpen(true)
+								}
+							>
+								Dodaj cwiczenie
+							</button>
+						</div>
+
+						<div className={styles.assignments}>
+							{apiSubjectAssignments.length === 0 ? (
+								<p>Brak ćwiczeń dla tego przedmiotu.</p>
+							) : (
+								apiSubjectAssignments.map((assignment) => (
+									<div
+										className={styles.assignment}
+										key={assignment.assignment_id}
+									>
+										<p>{assignment.title}</p>
+
+										<div className={styles.groupLocal}>
+											<button
+												className={`${styles.button} ${styles.buttonPrimary}`}
+												onClick={() =>
+													viewUserSolution(
+														assignment.assignment_id
+													)
+												}
+												disabled={
+													!subjectUser ||
+													!apiSubjectEnrolledUsers.some(
+														(u) =>
+															u.user_id ===
+															subjectUser.user_id
+													)
+												}
+											>
+												Zobacz sprawozdanie wybranego
+												studenta
+											</button>
+
+											<button
+												className={`${styles.button} ${styles.buttonRed}`}
+												onClick={() =>
+													deleteAssignmentFromSubject(
+														assignment.assignment_id
+													)
+												}
+											>
+												Usuń cwiczenie
+											</button>
+										</div>
+									</div>
+								))
+							)}
+						</div>
+					</div>
+				</div>
+			)}
+
+			{isNewSubjectModalOpen && (
+				<Modal onClose={() => setIsNewSubjectModalOpen(false)}>
+					<h2>Dodaj nowy przedmiot</h2>
+
+					<div className={styles.modalContent}>
+						<div>
+							<label htmlFor="subject_name">Nazwa:</label>
+
+							<input
+								type="text"
+								id="subject_name"
+								name="subject_name"
+								value={newSubject.subject_name}
+								onChange={handleNewSubjectChange}
+								className={styles.input}
+							/>
+						</div>
+
+						<button
+							className={`${styles.button} ${styles.buttonGreen}`}
+							onClick={createSubject}
+							disabled={!newSubject.subject_name}
+						>
+							Utwórz przedmiot
+						</button>
+					</div>
+				</Modal>
+			)}
+
+			{isAddAssignmentModalOpen && (
+				<Modal onClose={() => setIsAddAssignmentModalOpen(false)}>
+					<h2>Dodaj nowe zadanie</h2>
+
+					<div className={styles.modalContent}>
+						<div>
+							<label htmlFor="title">Tytuł:</label>
+
+							<input
+								type="text"
+								id="title"
+								name="title"
+								value={subjectNewAssignment.title}
+								onChange={handleNewAssignmentChange}
+								className={styles.input}
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="description">Opis:</label>
+
+							<textarea
+								id="description"
+								name="description"
+								value={subjectNewAssignment.description}
+								onChange={handleNewAssignmentChange}
+								className={styles.textarea}
+							/>
+						</div>
+
+						<button
+							className={`${styles.button} ${styles.buttonGreen}`}
+							onClick={addAssignmentToSubject}
+							disabled={
+								!subjectNewAssignment.title ||
+								!subjectNewAssignment.description
+							}
+						>
+							Dodaj ćwiczenie
+						</button>
+					</div>
+				</Modal>
+			)}
+
+			{isUserSolutionModalOpen && (
+				<Modal onClose={() => setIsUserSolutionModalOpen(false)}>
+					<h2>Sprawozdania studenta</h2>
+
+					<div className={styles.modalContent}>
+						{apiSubjectUserAssignmentSolution ? (
+							<div style={{ display: "contents" }}>
+								<div>
+									<label htmlFor="grade">Ocena:</label>
+
+									<input
+										type="number"
+										step={0.5}
+										max={5}
+										min={2}
+										id="grade"
+										name="grade"
+										value={
+											apiSubjectUserAssignmentSolution.grade
+										}
+										className={styles.input}
+										onChange={handleSolutionUpdate}
+									/>
+								</div>
+
+								<div>
+									<label htmlFor="review_comment">
+										Komentarz:
+									</label>
+
+									<textarea
+										id="review_comment"
+										name="review_comment"
+										value={
+											apiSubjectUserAssignmentSolution.review_comment
+										}
+										className={styles.input}
+										onChange={handleSolutionUpdate}
+									/>
+								</div>
+
+								<button
+									className={`${styles.button} ${styles.buttonPrimary}`}
+									onClick={() => {
+										if (!subjectUser) return;
+
+										const blob = new Blob(
+											[
+												atob(
+													apiSubjectUserAssignmentSolution.solution_data
+												)!,
+											],
+											{ type: "application/zip" }
+										);
+										const url =
+											window.URL.createObjectURL(blob);
+										const a = document.createElement("a");
+										a.href = url;
+										a.download = `sprawozdanie_${subjectUser.user_id}_${apiSubjectUserAssignmentSolution.solution_id}.zip`;
+										document.body.appendChild(a);
+										a.click();
+										window.URL.revokeObjectURL(url);
+										document.body.removeChild(a);
+									}}
+								>
+									Pobierz dane sprawozdania
+								</button>
+
+								<button
+									className={`${styles.button} ${styles.buttonGreen}`}
+									onClick={() => {
+										updateUserAssignmentSolution(
+											apiSubjectUserAssignmentSolution.assignment_id
+										);
+									}}
+								>
+									Zaktualizuj sprawozdanie
+								</button>
+							</div>
+						) : (
+							<p>Brak sprawozdania dla studenta.</p>
+						)}
+					</div>
+				</Modal>
+			)}
+		</div>
+	);
 }
+
+// Subject:
+//     subject_id: str
+//     subject_name: str
+
+// Assignment:
+//     assignment_id: str
+//     subject_id: str
+//     title: str
+//     description: str
+//     accepted_mime_types: str
+
+// User:
+//     user_id: str
+//     email: str
+//     name: str
+//     surname: str
+
+// Solution:
+//     solution_id: str
+//     grade: float
+//     submission_date: float
+//     solution_data: bytes
+//     review_comment: str
+//     review_date: str
+//     mime_type: str
+
+// 1. GET /api/subjects
+// Opis: Zwraca listę wszystkich przedmiotów.
+
+// Zwraca: List[Subject]
+
+// [
+//   {"subject_id": "1", "subject_name": "Matma"},
+//   {"subject_id": "2", "subject_name": "Przyrka"},
+//   {"subject_id": "3", "subject_name": "Geografia"}
+// ]
+
+// 2. POST /api/subjects
+// Opis: Dodaje nowy przedmiot do subjects_db.
+
+// Oczekuje: JSON:
+
+// {
+//   "subject_name": "Biologia"
+// }
+
+// 3. DELETE /api/subject/<subject_id>
+
+// Opis: Usuwa przedmiot o podanym subject_id.
+
+// 4. GET /api/subjects/<subject_id>/assignments
+// Opis: Zwraca listę zadań przypisanych do danego przedmiotu.
+
+// Zwraca: List[Assignment] lub pustą listę [] jeśli brak
+
+// 5. GET /api/subjects/<subject_id>/users/enrolled
+// Opis: Zwraca użytkowników zapisanych do danego przedmiotu.
+
+// Zwraca: List[User]
+
+// 6. GET /api/subjects/<subject_id>/users/not-enrolled
+// Opis: Zwraca użytkowników niezapisanych do danego przedmiotu.
+
+// Zwraca: List[User]
+
+// 7. POST /api/subjects/<subject_id>/users/<user_id>
+// Opis: Zapisuje użytkownika do danego przedmiotu.
+
+// 8. DELETE /api/subjects/<subject_id>/users/<user_id>
+// Opis: Usuwa użytkownika z danego przedmiotu.
+
+// 9. POST /api/subjects/<subject_id>/assignments
+// Opis: Tworzy nowe zadanie dla danego przedmiotu.
+
+// Oczekuje: JSON:
+
+// {
+//   "title": "Cwiczenie 1",
+//   "description": "Opis"
+// }
+
+// 10. DELETE /api/subjects/<subject_id>/assignments/<assignment_id>
+// Opis: Usuwa zadanie o podanym ID z danego przedmiotu.
+
+// 11. GET /api/users/<user_id>/assignments/<assignment_id>/solution
+// Opis: Zwraca rozwiązanie danego użytkownika dla konkretnego zadania.
+
+// Zwraca (sukces):
+
+// {
+//   "solution_id": "1001",
+//   "grade": 4.5,
+//   "submission_date": 1672531200.0,
+//   "solution_data": "base64_encoded_string",
+//   "review_comment": "Dobrze wykonane, ale brakuje kilku szczegółów",
+//   "review_date": "2023-01-02",
+//   "mime_type": "text/plain",
+//   "assignment_id": "101" <------ BARDZO WAŻNE!!
+// }
+
+// Brak rozwiązania: null
+
+// 12. PUT /api/users/<user_id>/assignments/<assignment_id>/solution
+// Opis: Aktualizacja rozwiązania.
+
+// Oczekuje: JSON:
+
+// {
+//   "grade": 5,
+//   "review_comment": "Opis"
+// }

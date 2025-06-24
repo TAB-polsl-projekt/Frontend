@@ -47,7 +47,7 @@ type Solution = {
 };
 
 export default function AdminPage() {
-	const baseApiUrl = "http://127.0.0.1:5000/api";
+	const baseApiUrl = "http://localhost:8000/api";
 
 	// API State
 	const [apiSubjects, setApiSubjects] = useState<Subject[]>([]);
@@ -414,7 +414,7 @@ export default function AdminPage() {
 	const deleteSubject = async () => {
 		if (!subject) return;
 
-		const res = await fetch(`${baseApiUrl}/subject/${subject.subject_id}`, {
+		const res = await fetch(`${baseApiUrl}/subjects/${subject.subject_id}`, {
 			method: "DELETE",
 			credentials: "include",
 			headers: {

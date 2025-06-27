@@ -15,11 +15,23 @@ interface AssignmentsData {
   subject_name: string;
   assignments: Assignment[];
 }
+interface Solution {
+  solution_id: string;
+  grade: number;
+  submission_date: string;
+  reviewed_by: string;
+  review_comment: string;
+  review_date: string;
+  assignment_id: string;
+}
 
 export default function AssignmentsTable() {
   const [data, setData] = useState<AssignmentsData | null>(null);
+  const [solution, setSolution] = useState<Solution | null>(null);
+  const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
   const {subject, setSubject} = useSubject();
 
   
@@ -37,7 +49,6 @@ export default function AssignmentsTable() {
         if (!res.ok) throw new Error('Could not load subjects');
 
         const list: { subject_id: string; subject_name: string }[] = await res.json();
-
         let chosen = list[0];
 
         const cookieId = Cookies.get('subject_id');
@@ -45,6 +56,9 @@ export default function AssignmentsTable() {
           const found = list.find(s => s.subject_id === cookieId);
           console.log('Cookie found:', cookieId, 'Found subject:', found);
           if (found) chosen = found;
+        }
+        else {
+          Cookies.set('subject_id', chosen.subject_id, { expires: 365 });
         }
 
         setSubject(chosen);
@@ -66,17 +80,27 @@ export default function AssignmentsTable() {
       .then((json) => setData(json));
   }, [subject]);
 
-
-
   const handleExerciseClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsSubjectModalOpen(true);
   };
 
-  const handleReportClick = (assignment: Assignment) => {
+  const handleReportClick = async (assignment: Assignment) => {
+  try {
+    const res = await fetch(`http://localhost:8000/api/assignments/${assignment.assignment_id}/solution`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error("Failed to fetch solution");
+
+    const json: Solution = await res.json();
     setSelectedAssignment(assignment);
-    setIsSubjectModalOpen(true);
-  };
+    setSelectedSolution(json);
+    setIsSolutionModalOpen(true);
+  } catch (err) {
+    console.error("Error fetching solution:", err);
+  }
+};
 
   if (!data) return <p>Loading...</p>;
 
@@ -123,6 +147,12 @@ export default function AssignmentsTable() {
           <p>{selectedAssignment.description}</p>
         </Modal>
     )}
+    {isSolutionModalOpen && selectedSolution && selectedAssignment && (
+        <Modal onClose={() => setIsSolutionModalOpen(false)}>
+          <h2>{selectedAssignment.title}</h2>
+          <p>{selectedSolution.review_comment}</p>
+          </Modal>
+        )}
     </div>
   );
 }

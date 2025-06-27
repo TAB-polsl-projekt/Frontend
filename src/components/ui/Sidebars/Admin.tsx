@@ -81,16 +81,8 @@ export default function Sidebar() {
       <div className={`${sidebarStyles.sidebar} ${isOpen ? sidebarStyles.sidebarOpen : ''}`}>
         <nav className={sidebarStyles.navLinks}>
           <button onClick={handleReturnToMain}>Strona główna</button>
-          <button onClick={handleSubjectChange}>Zmień przedmiot</button>
-          <button onClick={handleReport}>Wyślij sprawozdanie</button>
-          <button onClick={handleSchedule}>Harmonogram</button>
         </nav>
         <div className={sidebarStyles.bottomLinks}>
-            {mounted && (
-            <button onClick={toggleTheme}>
-              {theme === 'light' ? 'Tryb ciemny' : 'Tryb jasny'}
-            </button>
-          )}
           <button onClick={() => handleSettingsClick()}>Ustawienia</button>
           <button onClick={handleLogout}>Wyloguj</button>
         </div>

@@ -77,10 +77,8 @@ export default function Sidebar() {
           <button className={sidebarStyles.navButtons} onClick={handleReturnToMain}>Strona główna</button>
           <button className={sidebarStyles.navButtons} onClick={handleSubjectChange}>Zmień przedmiot</button>
           <button className={sidebarStyles.navButtons} onClick={handleReport}>Wyślij sprawozdanie</button>
-          <button className={sidebarStyles.navButtons} onClick={handleSchedule}>Harmonogram</button>
         </nav>
         <div className={sidebarStyles.bottomLinks}>
-          <ThemeSwitcher />
           <button className={sidebarStyles.navButtons} onClick={handleSettingsClick}>Ustawienia</button>
           <button className={sidebarStyles.navButtons} onClick={handleLogout}>Wyloguj</button>
         </div>

@@ -15,6 +15,31 @@ export const authOptions = {
       httpOptions: { timeout: 10000 },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user, account }: { token: any; user?: any; account?: any }) {
+      if (account && user) {
+        return {
+          accessToken: account.id_token,
+          accessTokenExpires: account?.expires_at 
+          ? account.expires_at * 1000
+          : 0,
+          refreshToken: account.refresh_token,
+          user, 
+        };
+      }
+      if (Date.now() < token.accessTokenExpires - 100000 || 0) {
+        return token;
+      }
+    },
+    async session({ session, token }: { session: any; token: any }) {
+      if (session) {
+        session.user = token.user;
+        session.error = token.error;
+        session.accessToken = token.accessToken;
+      }
+      return session;
+    },
+  }
 };
 
 export default NextAuth(authOptions);

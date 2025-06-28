@@ -6,7 +6,7 @@ import sidebarStyles from '@/styles/sidebar.module.css';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modals/UserSettings';
 import SubjectModal from '@/components/ui/Modals/ChangeSubject';
-import ThemeSwitcher from '@/components/ui/ThemeSwitcher';
+import Cookies from 'js-cookie';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,45 +27,40 @@ export default function Sidebar() {
   // ROUTER STUFF
 
   const handleReturnToMain = () => {
-    console.log('Returning to main page');
     router.push('/userMain');
     setIsOpen(false);
   };
 
   const handleReport = () => {
-    console.log('Report clicked');
     router.push('/userMain/report');
     setIsOpen(false);
   };
 
-  const handleSchedule = () => {
-    console.log('Schedule clicked');
-    // Implement schedule navigation logic here
-    router.push('/userMain/schedule');
-    setIsOpen(false);
-  }
-
   const handleLogout = () => {
+    Cookies.remove('subject_id');
+
+    fetch('http://localhost:8000/api/auth', {
+      method: 'DELETE',
+      credentials: 'include',
+    }).then(() => {
+      Cookies.remove('session_id');
+    })
+
     router.push('/');
   };
 
   // ROUTER STUFF END
   // MODAL HANDLERS
 
-    const handleSettingsClick = () => {
-    console.log('Settings clicked');
+  const handleSettingsClick = () => {
     setIsSettingsModalOpen(true);
   };
 
   const handleSubjectChange = () => {
-    console.log('Subject change clicked');
     setIsSubjectModalOpen(true);
   };
 
   // MODAL HANDLERS END
-  // THEME TOGGLE
-
-  // THEME TOGGLE END
 
   return (
     <div>
@@ -84,7 +79,7 @@ export default function Sidebar() {
         </div>
       </div>
       {isSettingsModalOpen && (
-                <Modal onClose={() => setIsSettingsModalOpen(false)}/>)}
+        <Modal onClose={() => setIsSettingsModalOpen(false)} />)}
       {isOpen && <div className={sidebarStyles.overlay} onClick={() => setIsOpen(false)} />}
       {isSubjectModalOpen && (
         <SubjectModal onClose={() => setIsSubjectModalOpen(false)} />

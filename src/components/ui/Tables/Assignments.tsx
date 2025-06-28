@@ -14,6 +14,7 @@ interface Assignment {
 interface AssignmentsData {
   subject_name: string;
   assignments: Assignment[];
+  solutions: Solution[];
 }
 interface Solution {
   solution_id: string;
@@ -32,14 +33,17 @@ export default function AssignmentsTable() {
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
-  const {subject, setSubject} = useSubject();
+  const { subject, setSubject } = useSubject();
+  const [solutionExistsMap, setSolutionExistsMap] = useState<Record<string, boolean>>({});
+  const [solutionGradeMap, setSolutionGradeMap] = useState<Record<string, number>>({});
+  const [solutionRedoGradeMap, setSolutionRedoGradeMap] = useState<Record<string, number>>({});
 
-  
-    useEffect(() => {
+
+  useEffect(() => {
     if (subject?.subject_id) {
       setData;
       return; // Already set—do nothing
-      }
+    }
 
     async function initSubject() {
       try {
@@ -80,27 +84,57 @@ export default function AssignmentsTable() {
       .then((json) => setData(json));
   }, [subject]);
 
+  useEffect(() => {
+    if (!data?.assignments) return;
+
+    const fetchSolutions = async () => {
+      const results: Record<string, boolean> = {};
+      for (const assignment of data.assignments) {
+        try {
+          const res = await fetch(`http://localhost:8000/api/assignments/${assignment.assignment_id}/solution`, {
+            method: 'GET',
+            credentials: 'include',
+          });
+          results[assignment.assignment_id] = res.ok;
+          if (res.ok) {
+            const json: Solution = await res.json();
+            setSolution(json);
+            setSolutionGradeMap(prev => ({ ...prev, [assignment.assignment_id]: json.grade }));
+          } else {
+            setSolution(null);
+          }
+        } catch (e) {
+          results[assignment.assignment_id] = false;
+        }
+      }
+      setSolutionExistsMap(results);
+    };
+
+    fetchSolutions();
+  }, [data]);
+
   const handleExerciseClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsSubjectModalOpen(true);
   };
 
   const handleReportClick = async (assignment: Assignment) => {
-  try {
-    const res = await fetch(`http://localhost:8000/api/assignments/${assignment.assignment_id}/solution`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error("Failed to fetch solution");
+    try {
+      const res = await fetch(`http://localhost:8000/api/assignments/${assignment.assignment_id}/solution`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error("Failed to fetch solution");
 
-    const json: Solution = await res.json();
-    setSelectedAssignment(assignment);
-    setSelectedSolution(json);
-    setIsSolutionModalOpen(true);
-  } catch (err) {
-    console.error("Error fetching solution:", err);
-  }
-};
+      const json: Solution = await res.json();
+      setSelectedAssignment(assignment);
+      setSelectedSolution(json);
+      setIsSolutionModalOpen(true);
+    } catch (err) {
+      console.error("Error fetching solution:", err);
+    }
+
+  };
 
   if (!data) return <p>Loading...</p>;
 
@@ -128,15 +162,24 @@ export default function AssignmentsTable() {
                   {assignment.title}
                 </button>
               </td>
-              <td>3.0</td>
+              <td>{solutionGradeMap[assignment.assignment_id]}</td>
               <td></td>
               <td>Obecny</td>
               <td>
-                <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>
-                  Zaliczone
-                </button>
+                {solutionExistsMap[assignment.assignment_id] ? (
+                  <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>
+                    Zobacz sprawozdanie
+                  </button>
+                ) : (
+                  <span>Brak</span>
+                )}
               </td>
-              <td>3.0</td>
+              <td>{
+                    solutionRedoGradeMap[assignment.assignment_id] !== undefined
+                      ? (solutionRedoGradeMap[assignment.assignment_id] + solutionGradeMap[assignment.assignment_id])/2
+                      : solutionGradeMap[assignment.assignment_id] || 'Brak oceny'
+                      }
+                  </td>
             </tr>
           ))}
         </tbody>
@@ -146,13 +189,13 @@ export default function AssignmentsTable() {
           <h2>{selectedAssignment.title}</h2>
           <p>{selectedAssignment.description}</p>
         </Modal>
-    )}
-    {isSolutionModalOpen && selectedSolution && selectedAssignment && (
+      )}
+      {isSolutionModalOpen && selectedSolution && selectedAssignment && (
         <Modal onClose={() => setIsSolutionModalOpen(false)}>
           <h2>{selectedAssignment.title}</h2>
           <p>{selectedSolution.review_comment}</p>
-          </Modal>
-        )}
+        </Modal>
+      )}
     </div>
   );
 }

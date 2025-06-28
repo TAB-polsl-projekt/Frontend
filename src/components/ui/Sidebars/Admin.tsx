@@ -2,15 +2,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import sidebarStyles from '@/styles/sidebar.module.css';
 import { useRouter } from 'next/navigation';
-import Modal from '@/components/ui/Modals/UserSettings';
+import Modal from '@/components/ui/Modals/AdminSettings';
 import SubjectModal from '@/components/ui/Modals/ChangeSubject';
+import Cookies from 'js-cookie';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -28,25 +27,19 @@ export default function Sidebar() {
   // ROUTER STUFF
 
   const handleReturnToMain = () => {
-    console.log('ADMIN Returning to main page');
     router.push('/adminMain');
     setIsOpen(false);
   };
 
-  const handleReport = () => {
-    console.log('ADMIN Report clicked');
-    router.push('/adminMain/report');
-    setIsOpen(false);
-  };
-
-  const handleSchedule = () => {
-    console.log('ADMIN Schedule clicked');
-    // Implement schedule navigation logic here
-    router.push('/adminMain/schedule');
-    setIsOpen(false);
-  }
-
   const handleLogout = () => {
+    Cookies.remove('subject_id');
+    
+    fetch('http://localhost:8000/api/auth', {
+      method: 'DELETE',
+      credentials: 'include',
+    }).then(() => {
+      Cookies.remove('session_id');
+    })
     router.push('/');
   };
 
@@ -54,24 +47,10 @@ export default function Sidebar() {
   // MODAL HANDLERS
 
     const handleSettingsClick = () => {
-    console.log('ADMIN Settings clicked');
     setIsSettingsModalOpen(true);
   };
 
-  const handleSubjectChange = () => {
-    console.log('ADMIN Subject change clicked');
-    setIsSubjectModalOpen(true);
-  };
-
   // MODAL HANDLERS END
-  // THEME TOGGLE
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-    console.log('ADMIN Theme changed to:', theme === 'light' ? 'dark' : 'light');
-  };
-
-  // THEME TOGGLE END
 
   return (
     <div>

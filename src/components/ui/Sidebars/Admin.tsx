@@ -40,6 +40,7 @@ export default function Sidebar() {
     }).then(() => {
       Cookies.remove('session_id');
     })
+    localStorage.removeItem('e-mail');
     router.push('/');
   };
 

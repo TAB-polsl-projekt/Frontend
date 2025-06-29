@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Cookies from "js-cookie";
 import { sha256 } from "js-sha256";
-import { useUserData } from "@/context/userE-mailContext";
 
 export default function Home() {
   const router = useRouter();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
-  const { setEmail } = useUserData();
 
   const handleLogin = () => {
 
@@ -31,7 +29,7 @@ export default function Home() {
       })
       .then((data) => {
         console.log("Login successful:", data);
-        setEmail(login);
+        localStorage.setItem("e-mail", login);
         Cookies.set("session_id", data.session_id, { expires: 1 }); // Set cookie for 1 day
         if (data.is_admin) {
           router.push("/adminMain");

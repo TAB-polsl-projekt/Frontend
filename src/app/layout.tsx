@@ -1,4 +1,3 @@
-import { UserDataProvider } from "@/context/userE-mailContext";
 import "../styles/globals.css";
 import { ReactNode } from "react";
 
@@ -10,9 +9,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <title>Zmitac 2.0</title>
       </head>
       <body>
-        <UserDataProvider>
           {children}
-        </UserDataProvider>
       </body>
     </html>
   );

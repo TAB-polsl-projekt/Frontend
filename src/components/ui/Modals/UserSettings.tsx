@@ -1,29 +1,51 @@
 // src/components/ui/UserSettingsModal.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '@/styles/modal.module.css';
+import { useUser } from '@/context/userIDContext';
+import { sha256 } from 'js-sha256';
 
 interface ModalProps {
   onClose: () => void;
 }
 
 export default function UserSettingsModal({ onClose }: ModalProps) {
-  const [email, setEmail] = useState('');
-  const [albumNumber, setAlbumNumber] = useState('');
+
+  const [email, setEmail] = useState(localStorage.getItem('e-mail') ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const { userId, sessionId } = useUser();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Dodaj logikę walidacji i aktualizacji danych użytkownika
-    console.log('Email:', email);
-    console.log('Numer albumu:', albumNumber);
-    console.log('Aktualne hasło:', currentPassword);
-    console.log('Nowe hasło:', newPassword);
-    console.log('Potwierdzenie hasła:', confirmPassword);
-    // Zamknij modal po zakończeniu
+
+    if (newPassword !== confirmPassword) {
+      alert('Nowe hasło i potwierdzenie hasła nie są zgodne.');
+      return;
+    }
+
+    fetch(`http://localhost:8000/api/users/${userId}/login`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        passwd_hash: sha256(newPassword)
+      }),
+      credentials: 'include',
+    }).then((response) => {
+      if (!response.ok) {
+        alert('Nie udało się zaktualizować ustawień użytkownika. Sprawdź swoje dane.');
+        throw new Error('Failed to update user settings');
+      }
+      localStorage.setItem('e-mail', email);
+      return response.json();
+    });
+
     onClose();
   };
 
@@ -41,15 +63,6 @@ export default function UserSettingsModal({ onClose }: ModalProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Numer albumu:
-            <input
-              type="text"
-              value={albumNumber}
-              onChange={(e) => setAlbumNumber(e.target.value)}
               required
             />
           </label>

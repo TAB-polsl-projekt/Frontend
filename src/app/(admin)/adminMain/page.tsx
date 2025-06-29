@@ -75,6 +75,19 @@ type Solution = {
 	mime_type: string;
 };
 
+type AllUser = {
+	user_id: string;
+	name: string;
+	surname: string;
+	email: string;
+	student_id?: string;
+	is_admin: boolean;
+};
+
+type EditUserForm = {
+	password_hash: string;
+};
+
 export default function AdminPage() {
 	const baseApiUrl = "http://localhost:8000/api";
 
@@ -146,6 +159,17 @@ export default function AdminPage() {
 	const [isEditUserRolesModalOpen, setIsEditUserRolesModalOpen] = useState<boolean>(false);
 	const [userSearchTerm, setUserSearchTerm] = useState<string>("");
 	const [isUserDropdownOpen, setIsUserDropdownOpen] = useState<boolean>(false);
+
+	// Edit user states
+	const [isEditUserModalOpen, setIsEditUserModalOpen] = useState<boolean>(false);
+	const [allUsers, setAllUsers] = useState<AllUser[]>([]);
+	const [selectedUserForEdit, setSelectedUserForEdit] = useState<AllUser | null>(null);
+	const [editUserForm, setEditUserForm] = useState<EditUserForm>({
+		password_hash: "",
+	});
+	const [editUserSearchTerm, setEditUserSearchTerm] = useState<string>("");
+	const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+	const [isNewUserPasswordVisible, setIsNewUserPasswordVisible] = useState<boolean>(false);
 
 	const fetchSubjects = async (): Promise<Subject[]> => {
 		const res = await fetch(`${baseApiUrl}/subjects`, {
@@ -287,6 +311,47 @@ export default function AdminPage() {
 		return responseData.roles || [];
 	};
 
+	const fetchAllUsers = async (): Promise<AllUser[]> => {
+		const res = await fetch(`${baseApiUrl}/users`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (!res.ok) {
+			alert("Błąd pobierania listy użytkowników");
+			return [];
+		}
+
+		return await res.json();
+	};
+
+	const updateUserPassword = async (userId: string, passwordHash: string): Promise<boolean> => {
+		const res = await fetch(`${baseApiUrl}/users/${userId}/login`, {
+			method: "PUT",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				passwd_hash: passwordHash,
+			}),
+		});
+
+		if (!res.ok) {
+			if (res.status === 403) {
+				alert("Brak uprawnień do modyfikacji tego użytkownika");
+			} else {
+				alert("Błąd aktualizacji hasła użytkownika");
+			}
+			return false;
+		}
+
+		return true;
+	};
+
 	const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const selectedSubject: Subject = JSON.parse(e.target.value);
 
@@ -319,7 +384,7 @@ export default function AdminPage() {
 	};
 
 	const addRoleToUser = async (roleId: string) => {
-		if (!subjectUser) return;
+		if (!subjectUser || !subject) return;
 
 		const roleData: RoleData = {
 			role_id: roleId,
@@ -335,20 +400,27 @@ export default function AdminPage() {
 		});
 
 		if (res.ok) {
-			// Refresh user roles
-			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
-			setUserRoles(updatedRoles);
+			// Refresh user roles with subject filtering
+			const [allUserRoles, allSubjectRoles] = await Promise.all([
+				fetchUserRoles(subjectUser.user_id),
+				fetchSubjectRoles(subject.subject_id)
+			]);
+			
+			// Calculate intersection: roles that user has AND are assigned to subject
+			const userRolesForSubject = allUserRoles.filter(userRole =>
+				allSubjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
+			);
+			
+			setUserRoles(userRolesForSubject);
 
-			// Refresh user lists
-			if (subject) {
-				fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
-					setApiSubjectEnrolledUsers(users)
-				);
+			// Refresh enrolled and not enrolled user lists
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectEnrolledUsers(users)
+			);
 
-				fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
-					setApiSubjectNotEnrolledUsers(users)
-				);
-			}
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectNotEnrolledUsers(users)
+			);
 		} else {
 			alert("Błąd dodawania roli do użytkownika");
 		}
@@ -371,9 +443,18 @@ export default function AdminPage() {
 		});
 
 		if (res.ok) {
-			// Refresh user roles
-			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
-			setUserRoles(updatedRoles);
+			// Refresh user roles with subject filtering
+			const [allUserRoles, allSubjectRoles] = await Promise.all([
+				fetchUserRoles(subjectUser.user_id),
+				fetchSubjectRoles(subject.subject_id)
+			]);
+			
+			// Calculate intersection: roles that user has AND are assigned to subject
+			const userRolesForSubject = allUserRoles.filter(userRole =>
+				allSubjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
+			);
+			
+			setUserRoles(userRolesForSubject);
 
 			// Refresh enrolled and not enrolled user lists
 			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
@@ -435,9 +516,18 @@ export default function AdminPage() {
 				setApiSubjectNotEnrolledUsers(users)
 			);
 
-			// Refresh user roles
-			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
-			setUserRoles(updatedRoles);
+			// Refresh user roles with subject filtering
+			const [allUserRoles, allSubjectRoles] = await Promise.all([
+				fetchUserRoles(subjectUser.user_id),
+				fetchSubjectRoles(subject.subject_id)
+			]);
+			
+			// Calculate intersection: roles that user has AND are assigned to subject
+			const userRolesForSubject = allUserRoles.filter(userRole =>
+				allSubjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
+			);
+			
+			setUserRoles(userRolesForSubject);
 		}
 
 		// Only show error notifications
@@ -493,8 +583,17 @@ export default function AdminPage() {
 
 		// Refresh user roles if the modal is open
 		if (isEditUserRolesModalOpen) {
-			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
-			setUserRoles(updatedRoles);
+			const [allUserRoles, allSubjectRoles] = await Promise.all([
+				fetchUserRoles(subjectUser.user_id),
+				fetchSubjectRoles(subject.subject_id)
+			]);
+			
+			// Calculate intersection: roles that user has AND are assigned to subject
+			const userRolesForSubject = allUserRoles.filter(userRole =>
+				allSubjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
+			);
+			
+			setUserRoles(userRolesForSubject);
 		}
 
 		setSubjectUser(null);
@@ -720,6 +819,7 @@ export default function AdminPage() {
 			}
 
 			setIsNewUserModalOpen(false);
+			setIsNewUserPasswordVisible(false);
 
 			// Reset form
 			setNewUser({
@@ -887,6 +987,42 @@ export default function AdminPage() {
 		);
 	};
 
+	const filterAllUsers = (users: AllUser[], searchTerm: string): AllUser[] => {
+		if (!searchTerm.trim()) return users;
+		
+		const lowerSearchTerm = searchTerm.toLowerCase();
+		return users.filter(user => 
+			(user.name?.toLowerCase() || '').includes(lowerSearchTerm) ||
+			(user.surname?.toLowerCase() || '').includes(lowerSearchTerm) ||
+			(user.email?.toLowerCase() || '').includes(lowerSearchTerm) ||
+			(user.student_id?.toLowerCase() || '').includes(lowerSearchTerm)
+		);
+	};
+
+	const handleEditUserChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+		setEditUserForm({ ...editUserForm, [name]: value });
+	};
+
+	const handleEditUserPassword = async () => {
+		if (!selectedUserForEdit || !editUserForm.password_hash.trim()) {
+			alert("Wybierz użytkownika i wprowadź nowe hasło");
+			return;
+		}
+
+		const success = await updateUserPassword(
+			selectedUserForEdit.user_id,
+			sha256(editUserForm.password_hash)
+		);
+
+		if (success) {
+			setEditUserForm({ password_hash: "" });
+			setSelectedUserForEdit(null);
+		}
+	};
+
 	useEffect(() => {
 		fetchSubjects().then((subjects) => setApiSubjects(subjects));
 		fetchRoles().then((roles) => setApiRoles(roles));
@@ -927,7 +1063,17 @@ export default function AdminPage() {
 
 	return (
 		<div className={styles.wrapper}>
-			<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
+			<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px", gap: "10px" }}>
+				<button
+					className={`${styles.button} ${styles.buttonPrimary}`}
+					onClick={async () => {
+						const users = await fetchAllUsers();
+						setAllUsers(users);
+						setIsEditUserModalOpen(true);
+					}}
+				>
+					Edytuj użytkownika
+				</button>
 				<button
 					className={`${styles.button} ${styles.buttonGreen}`}
 					onClick={() => setIsNewUserModalOpen(true)}
@@ -1124,11 +1270,21 @@ export default function AdminPage() {
 
 								<button
 									className={`${styles.button} ${styles.buttonPrimary}`}
-									onClick={() => {
-										if (subjectUser) {
-											fetchUserRoles(subjectUser.user_id).then((roles) =>
-												setUserRoles(roles)
+									onClick={async () => {
+										if (subjectUser && subject) {
+											// Fetch both user roles and subject roles
+											const [allUserRoles, allSubjectRoles] = await Promise.all([
+												fetchUserRoles(subjectUser.user_id),
+												fetchSubjectRoles(subject.subject_id)
+											]);
+											
+											// Calculate intersection: roles that user has AND are assigned to subject
+											const userRolesForSubject = allUserRoles.filter(userRole =>
+												allSubjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
 											);
+											
+											setUserRoles(userRolesForSubject);
+											setSubjectRoles(allSubjectRoles);
 											setIsEditUserRolesModalOpen(true);
 										}
 									}}
@@ -1468,15 +1624,34 @@ export default function AdminPage() {
 
 						<div>
 							<label htmlFor="password_hash">Hasło:</label>
-							<input
-								type="password"
-								id="password_hash"
-								name="password_hash"
-								value={newUser.password_hash}
-								onChange={handleNewUserChange}
-								className={styles.input}
-								required
-							/>
+							<div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+								<input
+									type={isNewUserPasswordVisible ? "text" : "password"}
+									id="password_hash"
+									name="password_hash"
+									value={newUser.password_hash}
+									onChange={handleNewUserChange}
+									className={styles.input}
+									required
+									style={{ flex: 1, paddingRight: "40px" }}
+								/>
+								<button
+									type="button"
+									onClick={() => setIsNewUserPasswordVisible(!isNewUserPasswordVisible)}
+									style={{
+										position: "absolute",
+										right: "8px",
+										background: "none",
+										border: "none",
+										cursor: "pointer",
+										padding: "4px",
+										color: "#666"
+									}}
+									title={isNewUserPasswordVisible ? "Ukryj hasło" : "Pokaż hasło"}
+								>
+									{isNewUserPasswordVisible ? "👁️" : "👁️‍🗨️"}
+								</button>
+							</div>
 						</div>
 
 						<div>
@@ -1544,7 +1719,10 @@ export default function AdminPage() {
 
 							<button
 								className={`${styles.button} ${styles.buttonRed}`}
-								onClick={() => setIsNewUserModalOpen(false)}
+								onClick={() => {
+									setIsNewUserModalOpen(false);
+									setIsNewUserPasswordVisible(false);
+								}}
 							>
 								Anuluj
 							</button>
@@ -1600,7 +1778,7 @@ export default function AdminPage() {
 
 						{/* Available Roles Section */}
 						<div style={{ marginBottom: "30px" }}>
-							<h3>Dostępne role (nieprzypisane do przedmiotu)</h3>
+							<h3>Dostępne role przedmiotu (nieprzypisane do użytkownika)</h3>
 							{apiRoles.filter(role => !subjectRoles.some(subjectRole => subjectRole.role_id === role.role_id)).length === 0 ? (
 								<p style={{ fontStyle: "italic", color: "#666" }}>
 									Wszystkie role są już przypisane do tego przedmiotu.
@@ -1710,21 +1888,22 @@ export default function AdminPage() {
 
 			{isEditUserRolesModalOpen && (
 				<Modal onClose={() => setIsEditUserRolesModalOpen(false)}>
-					<h2>Zarządzanie rolami użytkownika</h2>
+					<h2>Zarządzanie rolami użytkownika dla przedmiotu</h2>
 
 					<div className={styles.modalContent} style={{ maxHeight: "80vh", overflowY: "auto" }}>
-						{subjectUser && (
+						{subjectUser && subject && (
 							<div style={{ marginBottom: "20px" }}>
 								<p><strong>Użytkownik:</strong> {subjectUser.name} {subjectUser.surname} ({subjectUser.email})</p>
+								<p><strong>Przedmiot:</strong> {subject.subject_name}</p>
 							</div>
 						)}
 
 						{/* User Roles Section */}
 						<div style={{ marginBottom: "30px" }}>
-							<h3>Role przypisane do użytkownika</h3>
+							<h3>Role przypisane do użytkownika dla tego przedmiotu</h3>
 							{userRoles.length === 0 ? (
 								<p style={{ fontStyle: "italic", color: "#666" }}>
-									Brak ról przypisanych do tego użytkownika.
+									Brak ról przypisanych do tego użytkownika dla tego przedmiotu.
 								</p>
 							) : (
 								<div>
@@ -1755,14 +1934,14 @@ export default function AdminPage() {
 
 						{/* Available Roles Section */}
 						<div style={{ marginBottom: "30px" }}>
-							<h3>Dostępne role (nieprzypisane do użytkownika)</h3>
-							{apiRoles.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id)).length === 0 ? (
+							<h3>Dostępne role przedmiotu (nieprzypisane do użytkownika)</h3>
+							{subjectRoles.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id)).length === 0 ? (
 								<p style={{ fontStyle: "italic", color: "#666" }}>
-									Użytkownik ma już wszystkie dostępne role.
+									Użytkownik ma już wszystkie dostępne role dla tego przedmiotu.
 								</p>
 							) : (
 								<div>
-									{apiRoles
+									{subjectRoles
 										.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id))
 										.map((role) => (
 											<div key={role.role_id} style={{ 
@@ -1795,6 +1974,138 @@ export default function AdminPage() {
 								onClick={() => setIsEditUserRolesModalOpen(false)}
 							>
 								Zamknij
+							</button>
+						</div>
+					</div>
+				</Modal>
+			)}
+
+			{isEditUserModalOpen && (
+				<Modal onClose={() => setIsEditUserModalOpen(false)}>
+					<h2>Edytuj użytkownika</h2>
+
+					<div className={styles.modalContent} style={{ maxHeight: "80vh", overflowY: "auto" }}>
+						{/* User Selection Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Wybierz użytkownika</h3>
+							<input
+								type="text"
+								placeholder="Wyszukaj użytkownika..."
+								value={editUserSearchTerm}
+								onChange={(e) => setEditUserSearchTerm(e.target.value)}
+								className={styles.input}
+								style={{ marginBottom: "15px" }}
+							/>
+
+							<div style={{ 
+								maxHeight: "300px", 
+								overflowY: "auto", 
+								border: "1px solid #ddd", 
+								borderRadius: "4px",
+								backgroundColor: "#f9f9f9"
+							}}>
+								{filterAllUsers(allUsers, editUserSearchTerm).map((user) => (
+									<div
+										key={user.user_id}
+										onClick={() => setSelectedUserForEdit(user)}
+										style={{
+											padding: "12px",
+											cursor: "pointer",
+											borderBottom: "1px solid #eee",
+											backgroundColor: selectedUserForEdit?.user_id === user.user_id ? "#e3f2fd" : "white",
+											display: "flex",
+											justifyContent: "space-between",
+											alignItems: "center"
+										}}
+										onMouseEnter={(e) => e.currentTarget.style.backgroundColor = selectedUserForEdit?.user_id === user.user_id ? "#e3f2fd" : "#f5f5f5"}
+										onMouseLeave={(e) => e.currentTarget.style.backgroundColor = selectedUserForEdit?.user_id === user.user_id ? "#e3f2fd" : "white"}
+									>
+										<div>
+											<div style={{ fontWeight: "bold" }}>
+												{user.name} {user.surname}
+											</div>
+											<div style={{ fontSize: "14px", color: "#666" }}>
+												{user.email}
+											</div>
+											{user.student_id && (
+												<div style={{ fontSize: "12px", color: "#888" }}>
+													ID: {user.student_id}
+												</div>
+											)}
+											{user.is_admin && (
+												<div style={{ fontSize: "12px", color: "#d32f2f", fontWeight: "bold" }}>
+													Administrator
+												</div>
+											)}
+										</div>
+										{selectedUserForEdit?.user_id === user.user_id && (
+											<span style={{ color: "#1976d2", fontSize: "18px" }}>✓</span>
+										)}
+									</div>
+								))}
+							</div>
+						</div>
+
+						{/* Password Change Section */}
+						{selectedUserForEdit && (
+							<div style={{ marginBottom: "30px" }}>
+								<h3>Zmień hasło dla: {selectedUserForEdit.name} {selectedUserForEdit.surname}</h3>
+								<div>
+									<label htmlFor="edit_password_hash">Nowe hasło:</label>
+									<div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+										<input
+											type={isPasswordVisible ? "text" : "password"}
+											id="edit_password_hash"
+											name="password_hash"
+											value={editUserForm.password_hash}
+											onChange={handleEditUserChange}
+											className={styles.input}
+											placeholder="Wprowadź nowe hasło"
+											style={{ flex: 1, paddingRight: "40px" }}
+										/>
+										<button
+											type="button"
+											onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+											style={{
+												position: "absolute",
+												right: "8px",
+												background: "none",
+												border: "none",
+												cursor: "pointer",
+												padding: "4px",
+												color: "#666"
+											}}
+											title={isPasswordVisible ? "Ukryj hasło" : "Pokaż hasło"}
+										>
+											{isPasswordVisible ? "👁️" : "👁️‍🗨️"}
+										</button>
+									</div>
+								</div>
+							</div>
+						)}
+
+						{/* Action Buttons */}
+						<div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
+							{selectedUserForEdit && (
+								<button
+									className={`${styles.button} ${styles.buttonGreen}`}
+									onClick={handleEditUserPassword}
+									disabled={!editUserForm.password_hash.trim()}
+								>
+									Zmień hasło
+								</button>
+							)}
+							<button
+								className={`${styles.button} ${styles.buttonPrimary}`}
+								onClick={() => {
+									setIsEditUserModalOpen(false);
+									setSelectedUserForEdit(null);
+									setEditUserForm({ password_hash: "" });
+									setEditUserSearchTerm("");
+									setIsPasswordVisible(false);
+								}}
+							>
+								Wyjdź
 							</button>
 						</div>
 					</div>

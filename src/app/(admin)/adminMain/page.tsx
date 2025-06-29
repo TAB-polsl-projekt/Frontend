@@ -25,6 +25,25 @@ type User = {
 	surname: string;
 };
 
+type Role = {
+	role_id: string;
+	name: string;
+};
+
+type RoleData = {
+	role_id: string;
+};
+
+type SubjectRole = {
+	subject_id: string;
+	role_id: string;
+};
+
+type NewRoleForm = {
+	role_id: string;
+	name: string;
+};
+
 type NewSubjectForm = {
 	subject_name: string;
 };
@@ -33,6 +52,15 @@ type NewAssignmentForm = {
 	title: string;
 	description: string;
 	accepted_mime_types: string;
+};
+
+type NewUserForm = {
+	email: string;
+	password_hash: string;
+	student_id: string;
+	name: string;
+	surname: string;
+	is_admin: boolean;
 };
 
 type Solution = {
@@ -62,6 +90,10 @@ export default function AdminPage() {
 	const [apiSubjectNotEnrolledUsers, setApiSubjectNotEnrolledUsers] =
 		useState<User[]>([]);
 
+	const [apiRoles, setApiRoles] = useState<Role[]>([]);
+	const [userRoles, setUserRoles] = useState<Role[]>([]);
+	const [subjectRoles, setSubjectRoles] = useState<Role[]>([]);
+
 	const [
 		apiSubjectUserAssignmentSolution,
 		setApiSubjectUserAssignmentSolution,
@@ -82,6 +114,20 @@ export default function AdminPage() {
 		subject_name: "",
 	});
 
+	const [newUser, setNewUser] = useState<NewUserForm>({
+		email: "",
+		password_hash: "",
+		student_id: "",
+		name: "",
+		surname: "",
+		is_admin: false,
+	});
+
+	const [newRole, setNewRole] = useState<NewRoleForm>({
+		role_id: "",
+		name: "",
+	});
+
 	const [isNewSubjectModalOpen, setIsNewSubjectModalOpen] =
 		useState<boolean>(false);
 
@@ -90,6 +136,15 @@ export default function AdminPage() {
 
 	const [isUserSolutionModalOpen, setIsUserSolutionModalOpen] =
 		useState<boolean>(false);
+
+	const [isRoleModalOpen, setIsRoleModalOpen] = useState<boolean>(false);
+	const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
+	const [isNewUserModalOpen, setIsNewUserModalOpen] = useState<boolean>(false);
+	const [isEditRolesModalOpen, setIsEditRolesModalOpen] = useState<boolean>(false);
+	const [isEditUserRolesModalOpen, setIsEditUserRolesModalOpen] = useState<boolean>(false);
+	const [userSearchTerm, setUserSearchTerm] = useState<string>("");
+	const [isUserDropdownOpen, setIsUserDropdownOpen] = useState<boolean>(false);
 
 	const fetchSubjects = async (): Promise<Subject[]> => {
 		const res = await fetch(`${baseApiUrl}/subjects`, {
@@ -174,6 +229,63 @@ export default function AdminPage() {
 		return await res.json();
 	};
 
+	const fetchRoles = async (): Promise<Role[]> => {
+		const res = await fetch(`${baseApiUrl}/roles`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (!res.ok) {
+			alert("Błąd pobierania ról");
+			return [];
+		}
+
+		return await res.json();
+	};
+
+	const fetchUserRoles = async (userId: string): Promise<Role[]> => {
+		const res = await fetch(`${baseApiUrl}/users/${userId}/roles`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (!res.ok) {
+			if (res.status === 401) {
+				// User not authorized to view roles, return empty array
+				return [];
+			}
+			alert("Błąd pobierania ról użytkownika");
+			return [];
+		}
+
+		const responseData = await res.json();
+		return responseData.roles || [];
+	};
+
+	const fetchSubjectRoles = async (subjectId: string): Promise<Role[]> => {
+		const res = await fetch(`${baseApiUrl}/subjects/${subjectId}/roles`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (!res.ok) {
+			alert("Błąd pobierania ról przedmiotu");
+			return [];
+		}
+
+		const responseData = await res.json();
+		return responseData.roles || [];
+	};
+
 	const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const selectedSubject: Subject = JSON.parse(e.target.value);
 
@@ -190,18 +302,130 @@ export default function AdminPage() {
 	const addUserToSubject = async () => {
 		if (!subject || !subjectUser) return;
 
-		const res = await fetch(
-			`${baseApiUrl}/subjects/${subject.subject_id}/users/${subjectUser.user_id}`,
-			{
+		// Fetch current user roles and open role selection modal
+		const currentRoles = await fetchUserRoles(subjectUser.user_id);
+		setUserRoles(currentRoles);
+		setSelectedRoles([]); // Don't pre-select any roles - let user choose
+		setIsRoleModalOpen(true);
+	};
+
+	const handleRoleSelection = (roleId: string, checked: boolean) => {
+		if (checked) {
+			setSelectedRoles([...selectedRoles, roleId]);
+		} else {
+			setSelectedRoles(selectedRoles.filter(id => id !== roleId));
+		}
+	};
+
+	const addRoleToUser = async (roleId: string) => {
+		if (!subjectUser) return;
+
+		const roleData: RoleData = {
+			role_id: roleId,
+		};
+
+		const res = await fetch(`${baseApiUrl}/user/${subjectUser.user_id}/role`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(roleData),
+		});
+
+		if (res.ok) {
+			// Refresh user roles
+			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
+			setUserRoles(updatedRoles);
+
+			// Refresh user lists
+			if (subject) {
+				fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+					setApiSubjectEnrolledUsers(users)
+				);
+
+				fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+					setApiSubjectNotEnrolledUsers(users)
+				);
+			}
+		} else {
+			alert("Błąd dodawania roli do użytkownika");
+		}
+	};
+
+	const removeRoleFromUser = async (roleId: string) => {
+		if (!subjectUser || !subject) return;
+
+		const roleData: RoleData = {
+			role_id: roleId,
+		};
+
+		const res = await fetch(`${baseApiUrl}/user/${subjectUser.user_id}/role`, {
+			method: "DELETE",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(roleData),
+		});
+
+		if (res.ok) {
+			// Refresh user roles
+			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
+			setUserRoles(updatedRoles);
+
+			// Refresh enrolled and not enrolled user lists
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectEnrolledUsers(users)
+			);
+
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+				setApiSubjectNotEnrolledUsers(users)
+			);
+		} else {
+			alert("Błąd usuwania roli");
+		}
+	};
+
+	const saveUserRoles = async () => {
+		if (!subjectUser || !subject) return;
+
+		// Only add roles that the user doesn't already have
+		const newRoles = selectedRoles.filter(roleId => 
+			!userRoles.some(userRole => userRole.role_id === roleId)
+		);
+
+		if (newRoles.length === 0) {
+			alert("Nie wybrano żadnych nowych ról do dodania");
+			return;
+		}
+
+		let successCount = 0;
+		let errorCount = 0;
+
+		for (const roleId of newRoles) {
+			const roleData: RoleData = {
+				role_id: roleId,
+			};
+
+			const res = await fetch(`${baseApiUrl}/user/${subjectUser.user_id}/role`, {
 				method: "POST",
 				credentials: "include",
 				headers: {
 					"Content-Type": "application/json",
 				},
-			}
-		);
+				body: JSON.stringify(roleData),
+			});
 
-		if (res.ok) {
+			if (res.ok) {
+				successCount++;
+			} else {
+				errorCount++;
+			}
+		}
+
+		if (successCount > 0) {
+			// Refresh user lists
 			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
 				setApiSubjectEnrolledUsers(users)
 			);
@@ -209,38 +433,70 @@ export default function AdminPage() {
 			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
 				setApiSubjectNotEnrolledUsers(users)
 			);
-		} else {
-			alert("Błąd dodawania użytkownika do przedmiotu");
+
+			// Refresh user roles
+			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
+			setUserRoles(updatedRoles);
 		}
+
+		// Only show error notifications
+		if (errorCount > 0) {
+			alert(`Błąd podczas dodawania ${errorCount} ról`);
+		}
+
+		// Reset selected roles
+		setSelectedRoles([]);
 	};
 
 	const removeUserFromSubject = async () => {
 		if (!subject || !subjectUser) return;
 
-		const res = await fetch(
-			`${baseApiUrl}/subjects/${subject.subject_id}/users/${subjectUser.user_id}`,
-			{
+		// Get user roles and subject roles
+		const userRoles = await fetchUserRoles(subjectUser.user_id);
+		const subjectRoles = await fetchSubjectRoles(subject.subject_id);
+		
+		// Find common roles between user and subject
+		const commonRoles = userRoles.filter(userRole => 
+			subjectRoles.some(subjectRole => subjectRole.role_id === userRole.role_id)
+		);
+		
+		// Remove only the common roles
+		let rolesRemoved = 0;
+		for (const role of commonRoles) {
+			const roleData: RoleData = {
+				role_id: role.role_id,
+			};
+
+			const res = await fetch(`${baseApiUrl}/user/${subjectUser.user_id}/role`, {
 				method: "DELETE",
 				credentials: "include",
 				headers: {
 					"Content-Type": "application/json",
 				},
+				body: JSON.stringify(roleData),
+			});
+
+			if (res.ok) {
+				rolesRemoved++;
 			}
+		}
+
+		// Refresh user lists after removing roles
+		fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+			setApiSubjectEnrolledUsers(users)
 		);
 
-		if (res.ok) {
-			fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
-				setApiSubjectEnrolledUsers(users)
-			);
+		fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+			setApiSubjectNotEnrolledUsers(users)
+		);
 
-			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
-				setApiSubjectNotEnrolledUsers(users)
-			);
-
-			setSubjectUser(null);
-		} else {
-			alert("Błąd usuwania użytkownika z przedmiotu");
+		// Refresh user roles if the modal is open
+		if (isEditUserRolesModalOpen) {
+			const updatedRoles = await fetchUserRoles(subjectUser.user_id);
+			setUserRoles(updatedRoles);
 		}
+
+		setSubjectUser(null);
 	};
 
 	const addAssignmentToSubject = async () => {
@@ -430,8 +686,209 @@ export default function AdminPage() {
 		}
 	};
 
+	const createUser = async () => {
+		// Prepare the data according to the API structure
+		const accountData = {
+			email: newUser.email,
+			password_hash: newUser.password_hash,
+			student_id: newUser.student_id || null, // Convert empty string to null for Option<String>
+			name: newUser.name,
+			surname: newUser.surname,
+			is_admin: newUser.is_admin,
+		};
+
+		const res = await fetch(`${baseApiUrl}/account`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(accountData),
+		});
+
+		if (res.ok) {
+			// Refresh user lists if a subject is selected
+			if (subject) {
+				fetchSubjectEnrolledUsers(subject.subject_id).then((users) =>
+					setApiSubjectEnrolledUsers(users)
+				);
+
+				fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) =>
+					setApiSubjectNotEnrolledUsers(users)
+				);
+			}
+
+			setIsNewUserModalOpen(false);
+
+			// Reset form
+			setNewUser({
+				email: "",
+				password_hash: "",
+				student_id: "",
+				name: "",
+				surname: "",
+				is_admin: false,
+			});
+		} else {
+			alert("Błąd tworzenia użytkownika");
+		}
+	};
+
+	const handleNewUserChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value, type } = e.target;
+		
+		if (type === "checkbox") {
+			const checked = (e.target as HTMLInputElement).checked;
+			setNewUser({ ...newUser, [name]: checked });
+		} else {
+			setNewUser({ ...newUser, [name]: value });
+		}
+	};
+
+	const addRoleToSubject = async (roleId: string) => {
+		if (!subject) return;
+
+		const subjectRole: SubjectRole = {
+			subject_id: subject.subject_id,
+			role_id: roleId,
+		};
+
+		const res = await fetch(`${baseApiUrl}/subjects/add-role`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(subjectRole),
+		});
+
+		if (res.ok) {
+			// Refresh subject roles
+			fetchSubjectRoles(subject.subject_id).then((roles) =>
+				setSubjectRoles(roles)
+			);
+		} else if (res.status === 409) {
+			alert("Rola jest już przypisana do tego przedmiotu");
+		} else {
+			alert("Błąd dodawania roli do przedmiotu");
+		}
+	};
+
+	const removeRoleFromSubject = async (roleId: string) => {
+		if (!subject) return;
+
+		const requestData = {
+			role_id: roleId,
+			subject_id: subject.subject_id,
+		};
+
+		const res = await fetch(`${baseApiUrl}/subjects/add-role`, {
+			method: "DELETE",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(requestData),
+		});
+
+		if (res.ok) {
+			// Refresh subject roles
+			fetchSubjectRoles(subject.subject_id).then((roles) =>
+				setSubjectRoles(roles)
+			);
+		} else {
+			alert("Błąd usuwania roli z przedmiotu");
+		}
+	};
+
+	const createGlobalRole = async () => {
+		// Generate a unique role ID with timestamp and random string to minimize conflicts
+		const timestamp = Date.now();
+		const randomString = Math.random().toString(36).substring(2, 8);
+		const generatedRoleId = `role_${timestamp}_${randomString}`;
+
+		const roleData = {
+			role_id: generatedRoleId,
+			name: newRole.name,
+		};
+
+		const res = await fetch(`${baseApiUrl}/roles`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(roleData),
+		});
+
+		if (res.ok) {
+			// Refresh all roles
+			fetchRoles().then((roles) => setApiRoles(roles));
+			
+			// Refresh subject roles if subject is selected
+			if (subject) {
+				fetchSubjectRoles(subject.subject_id).then((roles) =>
+					setSubjectRoles(roles)
+				);
+			}
+
+			// Reset form
+			setNewRole({
+				role_id: "",
+				name: "",
+			});
+		} else {
+			alert("Błąd tworzenia roli");
+		}
+	};
+
+	const deleteGlobalRole = async (roleId: string) => {
+		const res = await fetch(`${baseApiUrl}/roles/${roleId}`, {
+			method: "DELETE",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (res.ok) {
+			// Refresh all roles
+			fetchRoles().then((roles) => setApiRoles(roles));
+			
+			// Refresh subject roles if subject is selected
+			if (subject) {
+				fetchSubjectRoles(subject.subject_id).then((roles) =>
+					setSubjectRoles(roles)
+				);
+			}
+		} else {
+			alert("Błąd usuwania roli");
+		}
+	};
+
+	const handleNewRoleChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+		setNewRole({ ...newRole, [name]: value });
+	};
+
+	const filterUsers = (users: User[], searchTerm: string): User[] => {
+		if (!searchTerm.trim()) return users;
+		
+		const lowerSearchTerm = searchTerm.toLowerCase();
+		return users.filter(user => 
+			(user.name?.toLowerCase() || '').includes(lowerSearchTerm) ||
+			(user.surname?.toLowerCase() || '').includes(lowerSearchTerm) ||
+			(user.email?.toLowerCase() || '').includes(lowerSearchTerm)
+		);
+	};
+
 	useEffect(() => {
 		fetchSubjects().then((subjects) => setApiSubjects(subjects));
+		fetchRoles().then((roles) => setApiRoles(roles));
 	}, []);
 
 	useEffect(() => {
@@ -450,8 +907,34 @@ export default function AdminPage() {
 		}
 	}, [subject]);
 
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			const target = event.target as Element;
+			if (!target.closest('[data-dropdown]')) {
+				setIsUserDropdownOpen(false);
+			}
+		};
+
+		if (isUserDropdownOpen) {
+			document.addEventListener('mousedown', handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isUserDropdownOpen]);
+
 	return (
 		<div className={styles.wrapper}>
+			<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
+				<button
+					className={`${styles.button} ${styles.buttonGreen}`}
+					onClick={() => setIsNewUserModalOpen(true)}
+				>
+					Dodaj nowego użytkownika
+				</button>
+			</div>
+
 			<div className={styles.groupSpaceBetween}>
 				<p>Wybierz przedmiot ktorym chcesz zarzadzac</p>
 
@@ -469,6 +952,21 @@ export default function AdminPage() {
 						disabled={!subject}
 					>
 						Usuń przedmiot
+					</button>
+
+					<button
+						className={`${styles.button} ${styles.buttonPrimary}`}
+						onClick={() => {
+							if (subject) {
+								fetchSubjectRoles(subject.subject_id).then((roles) =>
+									setSubjectRoles(roles)
+								);
+								setIsEditRolesModalOpen(true);
+							}
+						}}
+						disabled={!subject}
+					>
+						Edytuj role
 					</button>
 				</div>
 			</div>
@@ -501,60 +999,111 @@ export default function AdminPage() {
 							<p>Studenci</p>
 
 							<div className={styles.groupLocal}>
-								<select
-									className={styles.button}
-									value={
-										subjectUser
-											? JSON.stringify(subjectUser)
-											: ""
-									}
-									onChange={handleUserChange}
-								>
-									<option value="" disabled>
-										Wybierz studenta
-									</option>
+								<div style={{ position: "relative", width: "100%" }} data-dropdown>
+									<button
+										className={styles.button}
+										onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+										style={{ width: "100%", textAlign: "left", justifyContent: "space-between" }}
+									>
+										{subjectUser ? `${subjectUser.name} ${subjectUser.surname} (${subjectUser.email})` : "Wybierz studenta"}
+										<span>▼</span>
+									</button>
 
-									<optgroup label="Zapisani studenci">
-										{apiSubjectEnrolledUsers.map((user) => (
-											<option
-												key={user.user_id}
-												value={JSON.stringify(user)}
-											>
-												{user.name} {user.surname} (
-												{user.email})
-											</option>
-										))}
-									</optgroup>
+									{isUserDropdownOpen && (
+										<div style={{
+											position: "absolute",
+											top: "100%",
+											left: 0,
+											right: 0,
+											backgroundColor: "white",
+											border: "1px solid #ccc",
+											borderRadius: "4px",
+											maxHeight: "300px",
+											overflowY: "auto",
+											zIndex: 1000,
+											boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+										}}>
+											<input
+												type="text"
+												placeholder="Wyszukaj studenta..."
+												value={userSearchTerm}
+												onChange={(e) => setUserSearchTerm(e.target.value)}
+												style={{
+													width: "100%",
+													padding: "8px",
+													border: "none",
+													borderBottom: "1px solid #eee",
+													outline: "none"
+												}}
+												onClick={(e) => e.stopPropagation()}
+											/>
 
-									<optgroup label="Niezapisani studenci">
-										{apiSubjectNotEnrolledUsers.map(
-											(user) => (
-												<option
-													key={user.user_id}
-													value={JSON.stringify(user)}
-												>
-													{user.name} {user.surname} (
-													{user.email})
-												</option>
-											)
-										)}
-									</optgroup>
-								</select>
+											<div style={{ padding: "4px 0" }}>
+												<div style={{ 
+													padding: "4px 8px", 
+													fontWeight: "bold", 
+													backgroundColor: "#f5f5f5",
+													fontSize: "12px",
+													color: "#666"
+												}}>
+													Zapisani studenci
+												</div>
+												{filterUsers(apiSubjectEnrolledUsers, userSearchTerm).map((user) => (
+													<div
+														key={user.user_id}
+														onClick={() => {
+															setSubjectUser(user);
+															setIsUserDropdownOpen(false);
+															setUserSearchTerm("");
+														}}
+														style={{
+															padding: "8px 12px",
+															cursor: "pointer",
+															borderBottom: "1px solid #f0f0f0",
+															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"
+														}}
+														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
+														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
+													>
+														{user.name} {user.surname} ({user.email})
+													</div>
+												))}
+											</div>
 
-								<button
-									className={`${styles.button} ${styles.buttonGreen}`}
-									onClick={addUserToSubject}
-									disabled={
-										!subjectUser ||
-										apiSubjectEnrolledUsers.some(
-											(u) =>
-												u.user_id ===
-												subjectUser.user_id
-										)
-									}
-								>
-									Dodaj studenta
-								</button>
+											<div style={{ padding: "4px 0" }}>
+												<div style={{ 
+													padding: "4px 8px", 
+													fontWeight: "bold", 
+													backgroundColor: "#f5f5f5",
+													fontSize: "12px",
+													color: "#666"
+												}}>
+													Niezapisani studenci
+												</div>
+												{filterUsers(apiSubjectNotEnrolledUsers, userSearchTerm).map((user) => (
+													<div
+														key={user.user_id}
+														onClick={() => {
+															setSubjectUser(user);
+															setIsUserDropdownOpen(false);
+															setUserSearchTerm("");
+														}}
+														style={{
+															padding: "8px 12px",
+															cursor: "pointer",
+															borderBottom: "1px solid #f0f0f0",
+															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"
+														}}
+														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
+														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
+													>
+														{user.name} {user.surname} ({user.email})
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+								</div>
 
 								<button
 									className={`${styles.button} ${styles.buttonRed}`}
@@ -567,8 +1116,25 @@ export default function AdminPage() {
 												subjectUser.user_id
 										)
 									}
+									style={{ height: "100px", minHeight: "100px", padding: "12px 8px" }}
 								>
-									Usuń wybranego studenta
+									Usuń role użytkownika powiązane z tym przedmiotem
+								</button>
+
+								<button
+									className={`${styles.button} ${styles.buttonPrimary}`}
+									onClick={() => {
+										if (subjectUser) {
+											fetchUserRoles(subjectUser.user_id).then((roles) =>
+												setUserRoles(roles)
+											);
+											setIsEditUserRolesModalOpen(true);
+										}
+									}}
+									disabled={!subjectUser}
+									style={{ height: "100px", minHeight: "100px", padding: "12px 8px" }}
+								>
+									Edytuj role użytkownika
 								</button>
 							</div>
 						</div>
@@ -712,6 +1278,89 @@ export default function AdminPage() {
 				</Modal>
 			)}
 
+			{isRoleModalOpen && (
+				<Modal onClose={() => setIsRoleModalOpen(false)}>
+					<h2>Zarządzaj rolami użytkownika</h2>
+
+					<div className={styles.modalContent}>
+						{subjectUser && subject && (
+							<div>
+								<p>
+									<strong>Użytkownik:</strong> {subjectUser.name}{" "}
+									{subjectUser.surname} ({subjectUser.email})
+								</p>
+								<p>
+									<strong>Przedmiot:</strong> {subject.subject_name}
+								</p>
+							</div>
+						)}
+
+						{userRoles.length > 0 && (
+							<div style={{ marginBottom: "20px" }}>
+								<p><strong>Aktualne role użytkownika:</strong></p>
+								{userRoles.map((role) => (
+									<div key={role.role_id} style={{ 
+										display: "flex", 
+										justifyContent: "space-between", 
+										alignItems: "center",
+										marginBottom: "8px",
+										padding: "8px",
+										border: "1px solid #ddd",
+										borderRadius: "4px",
+										backgroundColor: "#f9f9f9"
+									}}>
+										<span>{role.name}</span>
+										<button
+											className={`${styles.button} ${styles.buttonRed}`}
+											onClick={() => removeRoleFromUser(role.role_id)}
+											style={{ padding: "4px 8px", fontSize: "12px" }}
+										>
+											Usuń
+										</button>
+									</div>
+								))}
+							</div>
+						)}
+
+						<div>
+							<label>Wybierz role do dodania:</label>
+
+							<div style={{ marginTop: "10px" }}>
+								{apiRoles
+									.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id))
+									.map((role) => (
+										<div key={role.role_id} style={{ marginBottom: "8px" }}>
+											<input
+												type="checkbox"
+												id={role.role_id}
+												checked={selectedRoles.includes(role.role_id)}
+												onChange={(e) => handleRoleSelection(role.role_id, e.target.checked)}
+											/>
+											<label htmlFor={role.role_id} style={{ marginLeft: "8px" }}>
+												{role.name}
+											</label>
+										</div>
+									))}
+							</div>
+						</div>
+
+						{apiRoles.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id)).length === 0 && (
+							<p style={{ fontStyle: "italic", color: "#666" }}>
+								Użytkownik ma już wszystkie dostępne role.
+							</p>
+						)}
+
+						<button
+							className={`${styles.button} ${styles.buttonGreen}`}
+							onClick={saveUserRoles}
+							disabled={selectedRoles.filter(roleId => !userRoles.some(userRole => userRole.role_id === roleId)).length === 0}
+						>
+							Dodaj wybrane role
+						</button>
+					</div>
+				</Modal>
+			)}
+
 			{isUserSolutionModalOpen && (
 				<Modal onClose={() => setIsUserSolutionModalOpen(false)}>
 					<h2>Sprawozdania studenta</h2>
@@ -797,6 +1446,359 @@ export default function AdminPage() {
 					</div>
 				</Modal>
 			)}
+
+			{isNewUserModalOpen && (
+				<Modal onClose={() => setIsNewUserModalOpen(false)}>
+					<h2>Dodaj nowego użytkownika</h2>
+
+					<div className={styles.modalContent}>
+						<div>
+							<label htmlFor="email">Email:</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								value={newUser.email}
+								onChange={handleNewUserChange}
+								className={styles.input}
+								required
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="password_hash">Hasło:</label>
+							<input
+								type="password"
+								id="password_hash"
+								name="password_hash"
+								value={newUser.password_hash}
+								onChange={handleNewUserChange}
+								className={styles.input}
+								required
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="student_id">ID studenta (opcjonalne):</label>
+							<input
+								type="text"
+								id="student_id"
+								name="student_id"
+								value={newUser.student_id}
+								onChange={handleNewUserChange}
+								className={styles.input}
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="name">Imię:</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								value={newUser.name}
+								onChange={handleNewUserChange}
+								className={styles.input}
+								required
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="surname">Nazwisko:</label>
+							<input
+								type="text"
+								id="surname"
+								name="surname"
+								value={newUser.surname}
+								onChange={handleNewUserChange}
+								className={styles.input}
+								required
+							/>
+						</div>
+
+						<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+							<input
+								type="checkbox"
+								id="is_admin"
+								name="is_admin"
+								checked={newUser.is_admin}
+								onChange={handleNewUserChange}
+							/>
+							<label htmlFor="is_admin">Administrator</label>
+						</div>
+
+						<div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+							<button
+								className={`${styles.button} ${styles.buttonGreen}`}
+								onClick={createUser}
+								disabled={
+									!newUser.email ||
+									!newUser.password_hash ||
+									!newUser.name ||
+									!newUser.surname
+								}
+							>
+								Dodaj
+							</button>
+
+							<button
+								className={`${styles.button} ${styles.buttonRed}`}
+								onClick={() => setIsNewUserModalOpen(false)}
+							>
+								Anuluj
+							</button>
+						</div>
+					</div>
+				</Modal>
+			)}
+
+			{isEditRolesModalOpen && (
+				<Modal onClose={() => setIsEditRolesModalOpen(false)}>
+					<h2>Zarządzanie rolami</h2>
+
+					<div className={styles.modalContent} style={{ maxHeight: "80vh", overflowY: "auto" }}>
+						{subject && (
+							<div style={{ marginBottom: "20px" }}>
+								<p><strong>Przedmiot:</strong> {subject.subject_name}</p>
+							</div>
+						)}
+
+						{/* Subject Roles Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Role przypisane do przedmiotu</h3>
+							{subjectRoles.length === 0 ? (
+								<p style={{ fontStyle: "italic", color: "#666" }}>
+									Brak ról przypisanych do tego przedmiotu.
+								</p>
+							) : (
+								<div>
+									{subjectRoles.map((role) => (
+										<div key={role.role_id} style={{ 
+											display: "flex", 
+											justifyContent: "space-between", 
+											alignItems: "center",
+											marginBottom: "8px",
+											padding: "8px",
+											border: "1px solid #ddd",
+											borderRadius: "4px",
+											backgroundColor: "#f9f9f9"
+										}}>
+											<span>{role.name}</span>
+											<button
+												className={`${styles.button} ${styles.buttonRed}`}
+												onClick={() => removeRoleFromSubject(role.role_id)}
+												style={{ padding: "4px 8px", fontSize: "12px" }}
+											>
+												Usuń z przedmiotu
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+
+						{/* Available Roles Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Dostępne role (nieprzypisane do przedmiotu)</h3>
+							{apiRoles.filter(role => !subjectRoles.some(subjectRole => subjectRole.role_id === role.role_id)).length === 0 ? (
+								<p style={{ fontStyle: "italic", color: "#666" }}>
+									Wszystkie role są już przypisane do tego przedmiotu.
+								</p>
+							) : (
+								<div>
+									{apiRoles
+										.filter(role => !subjectRoles.some(subjectRole => subjectRole.role_id === role.role_id))
+										.map((role) => (
+											<div key={role.role_id} style={{ 
+												display: "flex", 
+												justifyContent: "space-between", 
+												alignItems: "center",
+												marginBottom: "8px",
+												padding: "8px",
+												border: "1px solid #ddd",
+												borderRadius: "4px",
+												backgroundColor: "#f0f8ff"
+											}}>
+												<span>{role.name}</span>
+												<button
+													className={`${styles.button} ${styles.buttonGreen}`}
+													onClick={() => addRoleToSubject(role.role_id)}
+													style={{ padding: "4px 8px", fontSize: "12px" }}
+												>
+													Dodaj do przedmiotu
+												</button>
+											</div>
+										))}
+								</div>
+							)}
+						</div>
+
+						{/* Global Role Management Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Zarządzanie globalnymi rolami</h3>
+							
+							{/* Add New Global Role */}
+							<div style={{ marginBottom: "20px", padding: "15px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "#fafafa" }}>
+								<h4>Dodaj nową rolę globalną</h4>
+								<div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px" }}>
+									<input
+										type="text"
+										placeholder="Nazwa roli"
+										name="name"
+										value={newRole.name}
+										onChange={handleNewRoleChange}
+										className={styles.input}
+										style={{ flex: 1 }}
+									/>
+									<button
+										className={`${styles.button} ${styles.buttonGreen}`}
+										onClick={createGlobalRole}
+										disabled={!newRole.name}
+									>
+										Dodaj rolę
+									</button>
+								</div>
+							</div>
+
+							{/* All Global Roles */}
+							<div>
+								<h4>Wszystkie role globalne</h4>
+								{apiRoles.length === 0 ? (
+									<p style={{ fontStyle: "italic", color: "#666" }}>
+										Brak ról globalnych.
+									</p>
+								) : (
+									<div>
+										{apiRoles.map((role) => (
+											<div key={role.role_id} style={{ 
+												display: "flex", 
+												justifyContent: "space-between", 
+												alignItems: "center",
+												marginBottom: "8px",
+												padding: "8px",
+												border: "1px solid #ddd",
+												borderRadius: "4px",
+												backgroundColor: "#fff3cd"
+											}}>
+												<span>{role.name}</span>
+												<button
+													className={`${styles.button} ${styles.buttonRed}`}
+													onClick={() => deleteGlobalRole(role.role_id)}
+													style={{ padding: "4px 8px", fontSize: "12px" }}
+												>
+													Usuń globalnie
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+						</div>
+
+						<div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+							<button
+								className={`${styles.button} ${styles.buttonPrimary}`}
+								onClick={() => setIsEditRolesModalOpen(false)}
+							>
+								Zamknij
+							</button>
+						</div>
+					</div>
+				</Modal>
+			)}
+
+			{isEditUserRolesModalOpen && (
+				<Modal onClose={() => setIsEditUserRolesModalOpen(false)}>
+					<h2>Zarządzanie rolami użytkownika</h2>
+
+					<div className={styles.modalContent} style={{ maxHeight: "80vh", overflowY: "auto" }}>
+						{subjectUser && (
+							<div style={{ marginBottom: "20px" }}>
+								<p><strong>Użytkownik:</strong> {subjectUser.name} {subjectUser.surname} ({subjectUser.email})</p>
+							</div>
+						)}
+
+						{/* User Roles Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Role przypisane do użytkownika</h3>
+							{userRoles.length === 0 ? (
+								<p style={{ fontStyle: "italic", color: "#666" }}>
+									Brak ról przypisanych do tego użytkownika.
+								</p>
+							) : (
+								<div>
+									{userRoles.map((role) => (
+										<div key={role.role_id} style={{ 
+											display: "flex", 
+											justifyContent: "space-between", 
+											alignItems: "center",
+											marginBottom: "8px",
+											padding: "8px",
+											border: "1px solid #ddd",
+											borderRadius: "4px",
+											backgroundColor: "#f9f9f9"
+										}}>
+											<span>{role.name}</span>
+											<button
+												className={`${styles.button} ${styles.buttonRed}`}
+												onClick={() => removeRoleFromUser(role.role_id)}
+												style={{ padding: "4px 8px", fontSize: "12px" }}
+											>
+												Usuń z użytkownika
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+
+						{/* Available Roles Section */}
+						<div style={{ marginBottom: "30px" }}>
+							<h3>Dostępne role (nieprzypisane do użytkownika)</h3>
+							{apiRoles.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id)).length === 0 ? (
+								<p style={{ fontStyle: "italic", color: "#666" }}>
+									Użytkownik ma już wszystkie dostępne role.
+								</p>
+							) : (
+								<div>
+									{apiRoles
+										.filter(role => !userRoles.some(userRole => userRole.role_id === role.role_id))
+										.map((role) => (
+											<div key={role.role_id} style={{ 
+												display: "flex", 
+												justifyContent: "space-between", 
+												alignItems: "center",
+												marginBottom: "8px",
+												padding: "8px",
+												border: "1px solid #ddd",
+												borderRadius: "4px",
+												backgroundColor: "#f0f8ff"
+											}}>
+												<span>{role.name}</span>
+												<button
+													className={`${styles.button} ${styles.buttonGreen}`}
+													onClick={() => addRoleToUser(role.role_id)}
+													style={{ padding: "4px 8px", fontSize: "12px" }}
+												>
+													Dodaj do użytkownika
+												</button>
+											</div>
+										))}
+								</div>
+							)}
+						</div>
+
+						<div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+							<button
+								className={`${styles.button} ${styles.buttonPrimary}`}
+								onClick={() => setIsEditUserRolesModalOpen(false)}
+							>
+								Zamknij
+							</button>
+						</div>
+					</div>
+				</Modal>
+			)}
 		</div>
 	);
 }
@@ -870,7 +1872,7 @@ export default function AdminPage() {
 // Opis: Zapisuje użytkownika do danego przedmiotu.
 
 // 8. DELETE /api/subjects/<subject_id>/users/<user_id>
-// Opis: Usuwa użytkownika z danego przedmiotu.
+// Opis: Usuwa użytkownika z danego przedmiotu. 
 
 // 9. POST /api/subjects/<subject_id>/assignments
 // Opis: Tworzy nowe zadanie dla danego przedmiotu.

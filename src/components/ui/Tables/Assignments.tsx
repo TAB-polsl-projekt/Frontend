@@ -58,11 +58,10 @@ export default function AssignmentsTable() {
         const cookieId = Cookies.get('subject_id');
         if (cookieId) {
           const found = list.find(s => s.subject_id === cookieId);
-          console.log('Cookie found:', cookieId, 'Found subject:', found);
           if (found) chosen = found;
         }
         else {
-          Cookies.set('subject_id', chosen.subject_id, { expires: 365 });
+          Cookies.set('subject_id', chosen.subject_id, { expires: 1 });
         }
 
         setSubject(chosen);
@@ -137,8 +136,6 @@ export default function AssignmentsTable() {
   };
 
   if (!data) return <p>Loading...</p>;
-
-  console.log(data);
 
   return (
     <div className={userStyles.dashboard}>

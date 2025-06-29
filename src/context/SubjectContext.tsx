@@ -26,7 +26,6 @@ export const SubjectProvider = ({ children }: { children: ReactNode }) => {
 
 export const useSubject = () => {
   const ctx = useContext(SubjectContext);
-  console.log("useSubject context:", ctx?.subject);
   if (!ctx) throw new Error("useSubject must be used within SubjectProvider");
   return ctx;
 };

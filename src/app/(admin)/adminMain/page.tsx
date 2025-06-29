@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "@/styles/adminPage.module.css";
 import Modal from "@/components/ui/Modals/Generic";
+import { sha256 } from "js-sha256";
 
 type Subject = {
 	subject_id: string;
@@ -690,7 +691,7 @@ export default function AdminPage() {
 		// Prepare the data according to the API structure
 		const accountData = {
 			email: newUser.email,
-			password_hash: newUser.password_hash,
+			password_hash: sha256(newUser.password_hash),
 			student_id: newUser.student_id || null, // Convert empty string to null for Option<String>
 			name: newUser.name,
 			surname: newUser.surname,

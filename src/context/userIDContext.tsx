@@ -1,7 +1,7 @@
 // src/context/userIDContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface UserContextType {
   userId: string | null;
@@ -29,6 +29,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       setUserId(null);
       setSessionId(null);
+      console.error('Failed to refresh user:', err);
     }
   };
 

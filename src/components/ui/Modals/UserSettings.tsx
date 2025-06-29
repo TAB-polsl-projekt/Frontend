@@ -1,7 +1,7 @@
 // src/components/ui/UserSettingsModal.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styles from '@/styles/modal.module.css';
 import { useUser } from '@/context/userIDContext';
 import { sha256 } from 'js-sha256';
@@ -17,7 +17,7 @@ export default function UserSettingsModal({ onClose }: ModalProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const { userId, sessionId } = useUser();
+  const { userId } = useUser();
 
 const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

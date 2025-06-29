@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '@/styles/reportPage.module.css';
 import { useRouter } from 'next/navigation';
 import { useSubject } from '@/context/SubjectContext';
@@ -25,15 +25,21 @@ type User = {
 
 export default function ReportUploadPage() {
   const router = useRouter();
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const { subject } = useSubject();
   const [assignmentId, setAssignmentId] = useState<string>('');
+
+  const [studentComment, setStudentComment] = useState<string>('');
+  const [excerciseDate, setExerciseDate] = useState<string>('');
+
   const [zipFile, setZipFile] = useState<File | null>(null);
-
-
-  const [students, setStudents] = useState<User[]>([]);
+  
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>();
+  const [students, setStudents] = useState<User[]>([]);
+
+
   const [user_id, setUserId] = useState<string>();
 
   useEffect(() => {
@@ -85,6 +91,8 @@ export default function ReportUploadPage() {
 
       const payload = {
         solution_id: crypto.randomUUID(), // or any meaningful ID
+        student_comment: studentComment,
+        exercise_date: excerciseDate + " 00:00:00", 
         solution_data: Array.from(uint8Array),    // API expects an array
         mime_type: 'application/zip'
       };
@@ -174,7 +182,7 @@ export default function ReportUploadPage() {
       </select>
 
       <label className={styles.label}>Data odbycia ćwiczenia</label>
-      <input type="date" className={styles.input} />
+      <input type="date" className={styles.input} onChange={(e) => {setExerciseDate(e.target.value)}}/>
 
       <label className={styles.label}>Podsekcja</label>
       <select
@@ -202,7 +210,7 @@ export default function ReportUploadPage() {
       </div>
 
       <label className={styles.label}>Uwagi:</label>
-      <textarea rows={4} className={styles.textarea} />
+      <textarea rows={4} className={styles.textarea} onChange={(e) => {setStudentComment(e.target.value)}}/>
 
       <label className={styles.label}>Plik ZIP:</label>
       <input

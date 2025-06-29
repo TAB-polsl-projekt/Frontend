@@ -28,7 +28,6 @@ interface Solution {
 
 export default function AssignmentsTable() {
   const [data, setData] = useState<AssignmentsData | null>(null);
-  const [solution, setSolution] = useState<Solution | null>(null);
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -97,13 +96,11 @@ export default function AssignmentsTable() {
           results[assignment.assignment_id] = res.ok;
           if (res.ok) {
             const json: Solution = await res.json();
-            setSolution(json);
             setSolutionGradeMap(prev => ({ ...prev, [assignment.assignment_id]: json.grade }));
-          } else {
-            setSolution(null);
           }
         } catch (e) {
           results[assignment.assignment_id] = false;
+          console.error(`Error fetching solution for assignment ${assignment.assignment_id}:`, e);
         }
       }
       setSolutionExistsMap(results);

@@ -19,7 +19,7 @@ export default function UserSettingsModal({ onClose }: ModalProps) {
 
   const { userId, sessionId } = useUser();
 
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
@@ -34,7 +34,8 @@ export default function UserSettingsModal({ onClose }: ModalProps) {
       },
       body: JSON.stringify({
         email: email,
-        passwd_hash: sha256(newPassword)
+        passwd_hash: sha256(newPassword),
+        old_passwd_hash: sha256(currentPassword),
       }),
       credentials: 'include',
     }).then((response) => {

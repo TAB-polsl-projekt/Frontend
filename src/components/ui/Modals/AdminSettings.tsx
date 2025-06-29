@@ -11,7 +11,7 @@ interface ModalProps {
   onClose: () => void;
 }
 
-export default function UserSettingsModal({ onClose }: ModalProps) {
+export default function AdminSettingsModal({ onClose }: ModalProps) {
 
   const [email, setEmail] = useState(localStorage.getItem('e-mail') ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -35,7 +35,8 @@ export default function UserSettingsModal({ onClose }: ModalProps) {
       },
       body: JSON.stringify({
         email: email,
-        passwd_hash: sha256(newPassword)
+        passwd_hash: sha256(newPassword),
+        old_passwd_hash: sha256(currentPassword),
       }),
       credentials: 'include',
     }).then((response) => {

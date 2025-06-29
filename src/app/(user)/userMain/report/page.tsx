@@ -90,10 +90,10 @@ export default function ReportUploadPage() {
       const uint8Array = new Uint8Array(arrayBuffer);
 
       const payload = {
-        solution_id: crypto.randomUUID(), // or any meaningful ID
+        solution_id: crypto.randomUUID(),
         student_comment: studentComment,
-        exercise_date: excerciseDate + " 00:00:00", 
-        solution_data: Array.from(uint8Array),    // API expects an array
+        exercise_date: excerciseDate + "T00:00:00", 
+        solution_data: Array.from(uint8Array),
         mime_type: 'application/zip'
       };
       try {
@@ -102,7 +102,7 @@ export default function ReportUploadPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include', // if needed for session_id cookie
+          credentials: 'include',
           body: JSON.stringify(payload),
         });
         console.log('Paylod JSON:', JSON.stringify(payload));

@@ -67,11 +67,12 @@ type NewUserForm = {
 type Solution = {
 	solution_id: string;
 	assignment_id: string;
-	grade?: number;
-	submission_date: number;
-	solution_data: string;
-	review_comment?: string;
-	review_date?: string;
+	grade?: number | null;
+	submission_date: string;
+	solution_data: number[];
+	reviewed_by?: string | null;
+	review_comment?: string | null;
+	review_date?: string | null;
 	mime_type: string;
 };
 
@@ -1536,7 +1537,7 @@ export default function AdminPage() {
 										id="grade"
 										name="grade"
 										value={
-											apiSubjectUserAssignmentSolution.grade
+											apiSubjectUserAssignmentSolution.grade || ""
 										}
 										className={styles.input}
 										onChange={handleSolutionUpdate}
@@ -1552,7 +1553,7 @@ export default function AdminPage() {
 										id="review_comment"
 										name="review_comment"
 										value={
-											apiSubjectUserAssignmentSolution.review_comment
+											apiSubjectUserAssignmentSolution.review_comment || ""
 										}
 										className={styles.input}
 										onChange={handleSolutionUpdate}
@@ -1564,19 +1565,40 @@ export default function AdminPage() {
 									onClick={() => {
 										if (!subjectUser) return;
 
-										const blob = new Blob(
-											[
-												atob(
-													apiSubjectUserAssignmentSolution.solution_data
-												)!,
-											],
-											{ type: "application/zip" }
-										);
-										const url =
-											window.URL.createObjectURL(blob);
+										// Convert number array to Uint8Array for binary data
+										const uint8Array = new Uint8Array(apiSubjectUserAssignmentSolution.solution_data);
+										
+										// Use the actual MIME type from the solution
+										const mimeType = apiSubjectUserAssignmentSolution.mime_type || "application/octet-stream";
+										
+										// Determine file extension based on MIME type
+										const getFileExtension = (mimeType: string): string => {
+											const mimeToExt: { [key: string]: string } = {
+												"application/zip": ".zip",
+												"application/pdf": ".pdf",
+												"text/plain": ".txt",
+												"application/msword": ".doc",
+												"application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+												"application/vnd.ms-excel": ".xls",
+												"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+												"image/jpeg": ".jpg",
+												"image/png": ".png",
+												"image/gif": ".gif",
+												"text/html": ".html",
+												"text/css": ".css",
+												"application/javascript": ".js",
+												"application/json": ".json",
+												"text/xml": ".xml"
+											};
+											return mimeToExt[mimeType] || ".bin";
+										};
+										
+										const fileExtension = getFileExtension(mimeType);
+										const blob = new Blob([uint8Array], { type: mimeType });
+										const url = window.URL.createObjectURL(blob);
 										const a = document.createElement("a");
 										a.href = url;
-										a.download = `sprawozdanie_${subjectUser.user_id}_${apiSubjectUserAssignmentSolution.solution_id}.zip`;
+										a.download = `sprawozdanie_${subjectUser.user_id}_${apiSubjectUserAssignmentSolution.solution_id}${fileExtension}`;
 										document.body.appendChild(a);
 										a.click();
 										window.URL.revokeObjectURL(url);

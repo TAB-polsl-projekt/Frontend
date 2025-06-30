@@ -32,22 +32,28 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    Cookies.remove('subject_id');
-    
     fetch('http://localhost:8000/api/auth', {
       method: 'DELETE',
       credentials: 'include',
-    }).then(() => {
+    }).then((res) => {
+      if (res.status === 401) {
+        alert("Nie masz uprawnień.");
+        return;
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error('Server error during logout');
+        return;
+      }
       Cookies.remove('session_id');
+      localStorage.removeItem('e-mail');
+      router.push('/');
     })
-    localStorage.removeItem('e-mail');
-    router.push('/');
   };
 
   // ROUTER STUFF END
   // MODAL HANDLERS
 
-    const handleSettingsClick = () => {
+  const handleSettingsClick = () => {
     setIsSettingsModalOpen(true);
   };
 
@@ -68,7 +74,7 @@ export default function Sidebar() {
         </div>
       </div>
       {isSettingsModalOpen && (
-                <AdminSettingsModal onClose={() => setIsSettingsModalOpen(false)}/>)}
+        <AdminSettingsModal onClose={() => setIsSettingsModalOpen(false)} />)}
       {isOpen && <div className={sidebarStyles.overlay} onClick={() => setIsOpen(false)} />}
       {isSubjectModalOpen && (
         <SubjectModal onClose={() => setIsSubjectModalOpen(false)} />

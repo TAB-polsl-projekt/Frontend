@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from '@/styles/modal.module.css';
-import Cookies from 'js-cookie';
-import { setSubjectInStorage } from '@/app/utils/subjectStorage';
+import { setSubjectInStorage } from '@/utils/subjectStorage';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -23,12 +22,21 @@ export default function SubjectModal({ onClose }: SubjectModalProps) {
     fetch('http://localhost:8000/api/subjects', {
       method: 'GET',
       credentials: 'include'
-      })
-      .then((res) => res.json())
-      .then((json: Subject[]) => setSubjects(json))
-      .catch((error) => {
-        console.error('Error fetching subjects:', error);
-      });
+    })
+      .then((res) => { 
+        if (res.status === 401) {
+          alert("Nie masz uprawnień. Zaloguj się ponownie.");
+          window.location.href = '/';
+        } else if (res.status === 500) {
+          alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+          console.error('Server error while fetching subjects in modal');
+          return;
+        } else if (!res.ok) {
+          throw new Error('Undefined error while fetching subjects in modal');
+        }
+        return res.json() 
+
+      }).then((json: Subject[]) => setSubjects(json));
   }, []);
 
   const handleSubjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

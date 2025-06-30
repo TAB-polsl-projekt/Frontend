@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import userStyles from '@/styles/userPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
-import { getSubjectInStorage, setSubjectInStorage } from '@/app/utils/subjectStorage';
+import { getSubjectInStorage, setSubjectInStorage } from '@/utils/subjectStorage';
 interface Assignment {
   assignment_id: string;
   subject_id: string;
@@ -61,7 +61,16 @@ export default function AssignmentsTable() {
         const res = await fetch('http://localhost:8000/api/subjects', {
           credentials: 'include'
         });
-        if (!res.ok) throw new Error('Could not load subjects');
+        if (res.status === 401) {
+          alert("Nie masz uprawnień. Zaloguj się ponownie.");
+          window.location.href = '/';
+        } else if (res.status === 500) {
+          alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+          console.error('Server error while fetching subjects in /userMain');
+          return;
+        } else if (!res.ok) {
+          throw new Error('Undefined error while fetching subjects in /userMain');
+        }
 
         const list: { subject_id: string; subject_name: string }[] = await res.json();
         let chosen = list[0];
@@ -81,12 +90,24 @@ export default function AssignmentsTable() {
   }, []);
 
   useEffect(() => {
+    if (!subject?.subject_id) return;
     fetch('http://localhost:8000/api/subjects/' + subject?.subject_id, {
       method: 'GET',
       credentials: 'include',
     })
-      .then((res) => res.json())
-      .then((json) => setData(json));
+      .then((res) => {
+        if (res.status === 401) {
+          alert("Nie masz uprawnień. Zaloguj się ponownie.");
+          window.location.href = '/';
+        } else if (res.status === 500) {
+          alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+          console.error('Server error while fetching subject data in /userMain');
+          return;
+        } else if (!res.ok) {
+          throw new Error('Undefined error while fetching subject data in /userMain');
+        }
+        return res.json()
+      }).then((json) => setData(json));
   }, [subject]);
 
   useEffect(() => {
@@ -101,10 +122,19 @@ export default function AssignmentsTable() {
             credentials: 'include',
           });
           results[assignment.assignment_id] = res.ok;
-          if (res.ok) {
-            const json: Solution = await res.json();
-            setSolutionGradeMap(prev => ({ ...prev, [assignment.assignment_id]: json.grade }));
+
+          if (res.status === 401) {
+            alert("Nie masz uprawnień. Zaloguj się ponownie.");
+            window.location.href = '/';
+          } else if (res.status === 500) {
+            alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+            console.error(`Server error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
+          } else if (!res.ok) {
+            console.error(`Undefined error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
+            return;
           }
+          const json: Solution = await res.json();
+          setSolutionGradeMap(prev => ({ ...prev, [assignment.assignment_id]: json.grade }));
         } catch (e) {
           results[assignment.assignment_id] = false;
           console.error(`Error fetching solution for assignment ${assignment.assignment_id}:`, e);
@@ -127,8 +157,16 @@ export default function AssignmentsTable() {
         method: 'GET',
         credentials: 'include',
       });
-      if (!res.ok) throw new Error("Failed to fetch solution");
-
+      if (res.status === 401) {
+        alert("Nie masz uprawnień. Zaloguj się ponownie.");
+        window.location.href = '/';
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error(`Server error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
+      } else if (!res.ok) {
+        console.error(`Undefined error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
+        return;
+      }
       const json: Solution = await res.json();
       setSelectedAssignment(assignment);
       setSelectedSolution(json);

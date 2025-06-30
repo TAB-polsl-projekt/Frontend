@@ -18,7 +18,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const refreshUser = async () => {
     try {
       const res = await fetch(`http://localhost:8000/api/account`, { method: 'GET', credentials: 'include' });
-      if (!res.ok) throw new Error('Not logged in');
+      if (res.status === 401) {
+        alert("Nie masz uprawnień. Zaloguj się ponownie.");
+        window.location.href = '/';
+      } else if (res.status === 404) {
+        alert("Nie znaleziono użytkownika. Zaloguj się ponownie.");
+        window.location.href = '/';
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error('Server error while refreshing user');
+        return;
+      } else if (!res.ok) {
+        throw new Error('Undefined error while refreshing user');
+      }
+      
       const data = await res.json();
       setUserId(data.user_id);
 

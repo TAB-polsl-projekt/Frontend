@@ -18,15 +18,20 @@ export default function Home() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email: login, password_hash: sha256(password) }),
-      credentials: "include", // Include cookies in the request
+      credentials: "include",
     })
       .then((res) => {
-        if (!res.ok) {
-          throw new Error("Login failed");
+        if (res.status === 500) {
+          alert("Login failed. Check your credentials.");
+          console.error("Server error during login");
+          return;
+        } else if (!res.ok) {
+          throw new Error("Undefined error during login");
         }
         return res.json();
       })
       .then((data) => {
+        if (!data) return;
         console.log("Login successful:", data);
         localStorage.setItem("e-mail", login);
         if (data.is_admin) {
@@ -34,10 +39,6 @@ export default function Home() {
         } else {
           router.push("/userMain");
         }
-      })
-      .catch((error) => {
-        console.error("Error during login:", error);
-        alert("Login failed. Please check your credentials.");
       });
   };
 

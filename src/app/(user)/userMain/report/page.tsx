@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from '@/styles/reportPage.module.css';
 import { useRouter } from 'next/navigation';
-import { getSubjectInStorage } from '@/app/utils/subjectStorage';
+import { getSubjectInStorage } from '@/utils/subjectStorage';
 
 interface Assignment {
   assignment_id: string;
@@ -68,8 +68,16 @@ export default function ReportUploadPage() {
       method: 'GET',
       credentials: 'include',
     }).then((res) => {
-      if (!res.ok) {
-        throw new Error('Failed to fetch teachers');
+      if (res.status === 401) {
+        alert("Nie masz uprawnień. Zaloguj się ponownie.");
+        router.push('/');
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error('Server error while fetching teachers');
+        return;
+      }
+      else if (!res.ok) {
+        throw new Error('Undefined error while fetching teachers in /userMain/report');
       }
       return res.json();
     }).then((data) => {
@@ -80,14 +88,22 @@ export default function ReportUploadPage() {
   }, [subject?.subject_id]);
 
   useEffect(() => {
-
+    if (!subject?.subject_id) return;
     fetch(`http://localhost:8000/api/subjects/${subject?.subject_id}`, {
       method: 'GET',
       credentials: 'include',
     })
       .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch assignments');
+        if (res.status === 401) {
+          alert("Nie masz uprawnień. Zaloguj się ponownie.");
+          router.push('/');
+        } else if (res.status === 500) {
+          alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+          console.error('Server error while fetching subject data');
+          return;
+        }
+        else if (!res.ok) {
+          throw new Error('Undefined error while fetching subject data in /userMain/report');
         }
         return res.json();
       })
@@ -101,9 +117,22 @@ export default function ReportUploadPage() {
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/account`, {
+      method: 'GET',
       credentials: 'include',
     }).then((res) => {
-      if (!res.ok) throw new Error('Nie udało się pobrać danych użytkownika');
+      if (res.status === 401) {
+        alert("Nie masz uprawnień. Zaloguj się ponownie.");
+        router.push('/');
+      } else if (res.status === 404) {
+        alert("Nie znaleziono użytkownika. Zaloguj się ponownie.");
+        router.push('/');
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error('Server error while fetching user account');
+        return;
+      } else if (!res.ok) {
+        throw new Error('Undefined error while fetching user account in /userMain/report');
+      }
       return res.json();
     }).then((json) => {
       setUserId(json.user_id);
@@ -133,9 +162,9 @@ export default function ReportUploadPage() {
         },
         coauthors_user_ids: selectedCoAuthors,
         teacher_id: teacher.user_id,
+        role_id: selectedRole,
       };
       try {
-        console.log('Sending payload:', payload);
         const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
           method: 'POST',
           headers: {
@@ -144,9 +173,17 @@ export default function ReportUploadPage() {
           credentials: 'include',
           body: JSON.stringify(payload),
         });
-        if (response.ok) {
+        if (response.status === 200) {
           alert('Sprawozdanie zostało przesłane pomyślnie.');
           router.push('/userMain');
+        } else if (response.status === 400) {
+          alert('Użytkownik albo współautorzy nie są przypisani do roli.');
+        } else if (response.status === 401) {
+          alert('Nie jesteś uprawniony do przesyłania sprawozdań dla tego ćwiczenia. Zaloguj się ponownie.');
+          router.push('/');
+        } else if (response.status === 500) {
+          alert('Wystąpił błąd serwera podczas przesyłania sprawozdania.');
+          console.error('Server error during upload');
         } else {
           const err = await response.text();
           console.error('Error during upload:', err);
@@ -164,9 +201,18 @@ export default function ReportUploadPage() {
   const fetchRoles = (user_id?: string) => {
     if (user_id !== undefined) {
       fetch(`http://localhost:8000/api/users/${user_id}/roles`, {
+        method: 'GET',
         credentials: 'include',
       }).then((res) => {
-        if (!res.ok) throw new Error('Nie udało się pobrać ról użytkownika ' + user_id);
+        if (res.status === 401) {
+          alert("Nie masz uprawnień do przeglądania ról innych użytkowników.");
+        } else if (res.status === 500) {
+          alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+          console.error('Server error while fetching user roles in /userMain/report');
+          return;
+        } else if (!res.ok){ 
+          throw new Error('Undefined error while fetching user roles in /userMain/report');
+        }
         return res.json();
       }).then((json) => {
         setRoles(json.roles);
@@ -178,14 +224,23 @@ export default function ReportUploadPage() {
     }
   }
 
-  const fetchStudents = async (e: string) => {
+  const fetchStudents = async (roleId: string) => {
 
-    setSelectedRole(e);
+    setSelectedRole(roleId);
     try {
-      const res = await fetch(`http://localhost:8000/api/roles/${e}/users`, {
+      const res = await fetch(`http://localhost:8000/api/roles/${roleId}/users`, {
+        method: 'GET',
         credentials: 'include',
       });
-      if (!res.ok) throw new Error('Nie udało się pobrać uczniów');
+      if (res.status === 401) {
+        alert("Nie masz uprawnień do przeglądania użytkowników tej roli.");
+      } else if (res.status === 500) {
+        alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+        console.error('Server error while fetching students in /userMain/report');
+        return;
+      } else if (!res.ok) {
+        throw new Error('Undefined error while fetching students in /userMain/report');
+      }
 
       const json: User[] = await res.json();
       setStudents(json);

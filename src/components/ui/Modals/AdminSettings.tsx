@@ -39,9 +39,21 @@ export default function AdminSettingsModal({ onClose }: ModalProps) {
       }),
       credentials: 'include',
     }).then((response) => {
-      if (!response.ok) {
-        alert('Nie udało się zaktualizować ustawień użytkownika. Sprawdź swoje dane.');
-        throw new Error('Failed to update user settings');
+      if (response.status === 400) {
+        alert('Błędne dane logowania. Sprawdź swoje hasło.');
+        return;
+      } else if (response.status === 401) {
+        alert('Nie masz uprawnień. Zaloguj się ponownie.');
+        window.location.href = '/';
+      } else if (response.status === 403) {
+        alert('Nie masz uprawnień do tej operacji.');
+        return;
+      } else if (response.status === 500) {
+        alert('Wystąpił błąd serwera. Spróbuj ponownie później.');
+        console.error('Server error while updating user settings');
+      }
+      else if (!response.ok) {
+        throw new Error('Undefined error while updating user settings');
       }
       localStorage.setItem('e-mail', email);
       return response.json();

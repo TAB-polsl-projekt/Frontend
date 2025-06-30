@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from '@/styles/reportPage.module.css';
 import { useRouter } from 'next/navigation';
-import { useSubject } from '@/context/SubjectContext';
+import { getSubjectInStorage } from '@/app/utils/subjectStorage';
 
 interface Assignment {
   assignment_id: string;
@@ -26,15 +26,16 @@ type User = {
 export default function ReportUploadPage() {
   const router = useRouter();
 
+  const [subject, setSubject] = useState<{ subject_id: string; subject_name: string } | null>(null);
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const { subject } = useSubject();
   const [assignmentId, setAssignmentId] = useState<string>('');
 
   const [studentComment, setStudentComment] = useState<string>('');
   const [excerciseDate, setExerciseDate] = useState<string>('');
-
   const [zipFile, setZipFile] = useState<File | null>(null);
-  
+  const [selectedCoAuthors, setSelectedCoAuthors] = useState<string[]>([]);
+
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>();
   const [students, setStudents] = useState<User[]>([]);
@@ -43,9 +44,21 @@ export default function ReportUploadPage() {
   const [user_id, setUserId] = useState<string>();
 
   useEffect(() => {
-    if (!subject?.subject_id) return;
+  const updateSubject = () => {
+    const parsed = getSubjectInStorage();
+    setSubject(parsed);
+  };
 
-    fetch(`http://localhost:8000/api/subjects/${subject.subject_id}`, {
+  updateSubject(); // Initial fetch
+  window.addEventListener('subjectChanged', updateSubject);
+  return () => {
+    window.removeEventListener('subjectChanged', updateSubject);
+  };
+}, []);
+
+  useEffect(() => {
+
+    fetch(`http://localhost:8000/api/subjects/${subject?.subject_id}`, {
       method: 'GET',
       credentials: 'include',
     })
@@ -56,7 +69,6 @@ export default function ReportUploadPage() {
         return res.json();
       })
       .then((data) => {
-        console.log('Fetched assignments:', data);
         setAssignments(data.assignments || []);
       })
       .catch((error) => {
@@ -90,11 +102,13 @@ export default function ReportUploadPage() {
       const uint8Array = new Uint8Array(arrayBuffer);
 
       const payload = {
-        solution_id: crypto.randomUUID(),
-        student_comment: studentComment,
-        exercise_date: excerciseDate + "T00:00:00", 
-        solution_data: Array.from(uint8Array),
-        mime_type: 'application/zip'
+        solution: {
+          solution_data: Array.from(uint8Array),
+          student_comment: studentComment,
+          exercise_date: excerciseDate + "T00:00:00",
+          mime_type: 'application/zip'
+        },
+        coauthors_user_ids: selectedCoAuthors,
       };
       try {
         const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
@@ -105,13 +119,13 @@ export default function ReportUploadPage() {
           credentials: 'include',
           body: JSON.stringify(payload),
         });
-        console.log('Paylod JSON:', JSON.stringify(payload));
         if (response.ok) {
           alert('Sprawozdanie zostało przesłane pomyślnie.');
           router.push('/userMain');
         } else {
           const err = await response.text();
-          alert('Błąd podczas przesyłania: \n' + err);
+          console.error('Error during upload:', err);
+          alert('Błąd podczas przesyłania');
         }
       } catch (error) {
         console.error('Error during upload:', error);
@@ -124,19 +138,19 @@ export default function ReportUploadPage() {
 
   const fetchRoles = (user_id?: string) => {
     if (user_id !== undefined) {
-        fetch(`http://localhost:8000/api/users/${user_id}/roles`, {
-          credentials: 'include',
-        }).then((res) => {
-          if (!res.ok) throw new Error('Nie udało się pobrać ról użytkownika ' + user_id);
-          return res.json();
-        }).then((json) => {
-          setRoles(json.roles);
-          if (json.roles.length > 0) {
-            setSelectedRole(json.roles[0].role_id); // Set default role to the first one
-            fetchStudents(json.roles[0].role_id); // Fetch students for the default role
-          }
-        });
-      }
+      fetch(`http://localhost:8000/api/users/${user_id}/roles`, {
+        credentials: 'include',
+      }).then((res) => {
+        if (!res.ok) throw new Error('Nie udało się pobrać ról użytkownika ' + user_id);
+        return res.json();
+      }).then((json) => {
+        setRoles(json.roles);
+        if (json.roles.length > 0) {
+          setSelectedRole(json.roles[0].role_id); // Set default role to the first one
+          fetchStudents(json.roles[0].role_id); // Fetch students for the default role
+        }
+      });
+    }
   }
 
   const fetchStudents = async (e: string) => {
@@ -153,6 +167,12 @@ export default function ReportUploadPage() {
     } catch (err) {
       console.error('Błąd podczas pobierania uczniów:', err);
     }
+  }
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const userId = e.target.value;
+    setSelectedCoAuthors((prev) =>
+      e.target.checked ? [...prev, userId] : prev.filter((id) => id !== userId));
   }
 
   return (
@@ -182,7 +202,7 @@ export default function ReportUploadPage() {
       </select>
 
       <label className={styles.label}>Data odbycia ćwiczenia</label>
-      <input type="date" className={styles.input} onChange={(e) => {setExerciseDate(e.target.value)}}/>
+      <input type="date" className={styles.input} onChange={(e) => { setExerciseDate(e.target.value) }} />
 
       <label className={styles.label}>Podsekcja</label>
       <select
@@ -203,14 +223,14 @@ export default function ReportUploadPage() {
       <div className={styles.checkboxGroup}>
         {students.map((student) => (
           <label key={student.user_id}>
-            <input type="checkbox" value={student.user_id} />
+            <input type="checkbox" value={student.user_id} onChange={handleCheckboxChange} />
             {student.full_name} ({student.student_id})
           </label>
         ))}
       </div>
 
       <label className={styles.label}>Uwagi:</label>
-      <textarea rows={4} className={styles.textarea} onChange={(e) => {setStudentComment(e.target.value)}}/>
+      <textarea rows={4} className={styles.textarea} onChange={(e) => { setStudentComment(e.target.value) }} />
 
       <label className={styles.label}>Plik ZIP:</label>
       <input

@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import userStyles from '@/styles/userPage.module.css';
 import Modal from '@/components/ui/Modals/Generic';
-import { useSubject } from '@/context/SubjectContext';
-import Cookies from 'js-cookie';
-
+import { getSubjectInStorage, setSubjectInStorage } from '@/app/utils/subjectStorage';
 interface Assignment {
   assignment_id: string;
   subject_id: string;
@@ -32,10 +30,24 @@ export default function AssignmentsTable() {
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
-  const { subject, setSubject } = useSubject();
   const [solutionExistsMap, setSolutionExistsMap] = useState<Record<string, boolean>>({});
   const [solutionGradeMap, setSolutionGradeMap] = useState<Record<string, number>>({});
   const [solutionRedoGradeMap, setSolutionRedoGradeMap] = useState<Record<string, number>>({});
+
+  const [subject, setSubject] = useState<{ subject_id: string; subject_name: string } | null>(null);
+
+  useEffect(() => {
+    const updateSubject = () => {
+      const parsed = getSubjectInStorage();
+      setSubject(parsed);
+    };
+
+    updateSubject(); // Initial fetch
+    window.addEventListener('subjectChanged', updateSubject);
+    return () => {
+      window.removeEventListener('subjectChanged', updateSubject);
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -54,27 +66,22 @@ export default function AssignmentsTable() {
         const list: { subject_id: string; subject_name: string }[] = await res.json();
         let chosen = list[0];
 
-        const cookieId = Cookies.get('subject_id');
-        if (cookieId) {
-          const found = list.find(s => s.subject_id === cookieId);
-          if (found) chosen = found;
-        }
-        else {
-          Cookies.set('subject_id', chosen.subject_id, { expires: 1 });
-        }
-
-        setSubject(chosen);
+        setSubjectInStorage(chosen);
         setData;
       } catch (err) {
         console.error(err);
       }
     }
-
-    initSubject();
-  }, [subject, setSubject]);
+    if (getSubjectInStorage()) {
+      setSubject(getSubjectInStorage());
+    }
+    else {
+      initSubject();
+    }
+  }, []);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/subjects/' + Cookies.get('subject_id'), {
+    fetch('http://localhost:8000/api/subjects/' + subject?.subject_id, {
       method: 'GET',
       credentials: 'include',
     })
@@ -136,7 +143,21 @@ export default function AssignmentsTable() {
 
   return (
     <div className={userStyles.dashboard}>
-      <h1 className={userStyles.title}>Twoje Ćwiczenia z przedmiotu: {subject.subject_name}</h1>
+      <h1 className={userStyles.title}>
+        Twoje Ćwiczenia z przedmiotu: {
+          (() => {
+            const subj = getSubjectInStorage();
+            if (subj) {
+              try {
+                return subj.subject_name;
+              } catch {
+                return '';
+              }
+            }
+            return '';
+          })()
+        }
+      </h1>
       <table className={userStyles.table}>
         <thead>
           <tr>
@@ -169,11 +190,11 @@ export default function AssignmentsTable() {
                 )}
               </td>
               <td>{
-                    solutionRedoGradeMap[assignment.assignment_id] !== undefined
-                      ? (solutionRedoGradeMap[assignment.assignment_id] + solutionGradeMap[assignment.assignment_id])/2
-                      : solutionGradeMap[assignment.assignment_id] || 'Brak oceny'
-                      }
-                  </td>
+                solutionRedoGradeMap[assignment.assignment_id] !== undefined
+                  ? (solutionRedoGradeMap[assignment.assignment_id] + solutionGradeMap[assignment.assignment_id]) / 2
+                  : solutionGradeMap[assignment.assignment_id] || 'Brak oceny'
+              }
+              </td>
             </tr>
           ))}
         </tbody>

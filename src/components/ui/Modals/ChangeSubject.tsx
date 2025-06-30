@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from '@/styles/modal.module.css';
-import { useSubject } from '@/context/SubjectContext';
 import Cookies from 'js-cookie';
+import { setSubjectInStorage } from '@/app/utils/subjectStorage';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -17,7 +17,7 @@ interface Subject {
 export default function SubjectModal({ onClose }: SubjectModalProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
-  const { setSubject } = useSubject();
+  const [subject, setSubject] = useState<Subject | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/subjects', {
@@ -39,7 +39,7 @@ export default function SubjectModal({ onClose }: SubjectModalProps) {
     const selectedSubject = subjects.find(subject => subject.subject_id === selectedSubjectId);
     if (selectedSubject) {
       setSubject(selectedSubject);
-      Cookies.set('subject_id', selectedSubject.subject_id, { expires: 30 });
+      setSubjectInStorage(selectedSubject);
       onClose();
     } else {
       alert('Proszę wybrać przedmiot.');

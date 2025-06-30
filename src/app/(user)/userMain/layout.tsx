@@ -4,7 +4,6 @@ import React from 'react';
 import Sidebar from '@/components/ui/Sidebars/User';
 import userStyles from '@/styles/userPage.module.css';
 import Footer from '@/components/ui/Footer';
-import { SubjectProvider } from '@/context/SubjectContext';
 import { UserProvider, useUser } from '@/context/userIDContext';
 
 
@@ -31,11 +30,9 @@ export default function UserPageLayout({ children }: { children: React.ReactNode
   return (
     <div className={userStyles.container}>
       <UserProvider>
-        <SubjectProvider>
           <InnerLayout>
             {children}
           </InnerLayout>
-        </SubjectProvider>
       </UserProvider>
     </div>
   );

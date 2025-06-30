@@ -31,8 +31,8 @@ export default function ReportUploadPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignmentId, setAssignmentId] = useState<string>('');
 
-  const [teachers, setTeachers] = useState<{full_name: string; user_id: string}[]>([]);
-  const [teacher, setTeacher] = useState<{full_name: string; user_id: string}>({full_name: '', user_id: ''});
+  const [teachers, setTeachers] = useState<{ full_name: string; user_id: string }[]>([]);
+  const [teacher, setTeacher] = useState<{ full_name: string; user_id: string }>({ full_name: '', user_id: '' });
 
   const [studentComment, setStudentComment] = useState<string>('');
   const [excerciseDate, setExerciseDate] = useState<string>('');
@@ -62,7 +62,7 @@ export default function ReportUploadPage() {
   useEffect(() => {
     if (!subject?.subject_id) return;
 
-    setTeacher({full_name: '', user_id: ''}); // Reset teacher when subject changes
+    setTeacher({ full_name: '', user_id: '' }); // Reset teacher when subject changes
 
     fetch(`http://localhost:8000/api/subject/${subject?.subject_id}/teachers`, {
       method: 'GET',
@@ -148,54 +148,50 @@ export default function ReportUploadPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const arrayBuffer = reader.result as ArrayBuffer;
-      const uint8Array = new Uint8Array(arrayBuffer);
+    //TO FIX: multi-part form data upload wrong format
+    const form = new FormData();
 
-      const payload = {
-        solution: {
-          solution_data: Array.from(uint8Array),
-          student_comment: studentComment,
-          exercise_date: excerciseDate + "T00:00:00",
-          mime_type: 'application/zip'
-        },
-        coauthors_user_ids: selectedCoAuthors,
-        teacher_id: teacher.user_id,
-        role_id: selectedRole,
-      };
-      try {
-        const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        });
-        if (response.status === 200) {
-          alert('Sprawozdanie zostało przesłane pomyślnie.');
-          router.push('/userMain');
-        } else if (response.status === 400) {
-          alert('Użytkownik albo współautorzy nie są przypisani do roli.');
-        } else if (response.status === 401) {
-          alert('Nie jesteś uprawniony do przesyłania sprawozdań dla tego ćwiczenia. Zaloguj się ponownie.');
-          router.push('/');
-        } else if (response.status === 500) {
-          alert('Wystąpił błąd serwera podczas przesyłania sprawozdania.');
-          console.error('Server error during upload');
-        } else {
-          const err = await response.text();
-          console.error('Error during upload:', err);
-          alert('Błąd podczas przesyłania');
-        }
-      } catch (error) {
-        console.error('Error during upload:', error);
-        alert('Wystąpił błąd podczas przesyłania sprawozdania.');
+    const metadata = {
+      student_comment: studentComment,
+      exercise_date: excerciseDate + "T00:00:00",
+      mime_type: 'application/zip'
+    }
+
+    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+    form.append('solution', metadataBlob);
+    
+    form.append('solution_file', zipFile);
+
+    form.append('coauthors_user_ids', JSON.stringify(selectedCoAuthors));
+    form.append('teacher_id', teacher.user_id);
+    form.append('role_id', selectedRole || '');
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+      if (response.status === 200) {
+        alert('Sprawozdanie zostało przesłane pomyślnie.');
+        router.push('/userMain');
+      } else if (response.status === 400) {
+        alert('Bad request. Sprawdź poprawność danych.');
+      } else if (response.status === 401) {
+        alert('Nie jesteś uprawniony do przesyłania sprawozdań dla tego ćwiczenia. Zaloguj się ponownie.');
+        router.push('/');
+      } else if (response.status === 500) {
+        alert('Wystąpił błąd serwera podczas przesyłania sprawozdania.');
+        console.error('Server error during upload');
+      } else {
+        const err = await response.text();
+        console.error('Error during upload:', err);
+        alert('Błąd podczas przesyłania');
       }
-    };
-
-    reader.readAsArrayBuffer(zipFile);
+    } catch (error) {
+      console.error('Error during upload:', error);
+      alert('Wystąpił błąd podczas przesyłania sprawozdania.');
+    }
   };
 
   const fetchRoles = (user_id?: string) => {
@@ -210,7 +206,7 @@ export default function ReportUploadPage() {
           alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
           console.error('Server error while fetching user roles in /userMain/report');
           return;
-        } else if (!res.ok){ 
+        } else if (!res.ok) {
           throw new Error('Undefined error while fetching user roles in /userMain/report');
         }
         return res.json();
@@ -323,7 +319,7 @@ export default function ReportUploadPage() {
       <label className={styles.label}>Uwagi:</label>
       <textarea rows={4} className={styles.textarea} onChange={(e) => { setStudentComment(e.target.value) }} />
 
-      <label className={styles.label}>Plik ZIP:</label>
+      <label className={styles.label}>Plik ZIP (max 10MB):</label>
       <input
         type="file"
         accept="application/zip"

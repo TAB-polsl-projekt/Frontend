@@ -3,7 +3,6 @@
 import styles from "@/styles/mainPage.module.css";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Cookies from "js-cookie";
 import { sha256 } from "js-sha256";
 
 export default function Home() {
@@ -30,7 +29,6 @@ export default function Home() {
       .then((data) => {
         console.log("Login successful:", data);
         localStorage.setItem("e-mail", login);
-        Cookies.set("session_id", data.session_id, { expires: 1 }); // Set cookie for 1 day
         if (data.is_admin) {
           router.push("/adminMain");
         } else {

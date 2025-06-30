@@ -148,7 +148,6 @@ export default function ReportUploadPage() {
       return;
     }
 
-    //TO FIX: multi-part form data upload wrong format
     const form = new FormData();
 
     const metadata = {
@@ -156,13 +155,19 @@ export default function ReportUploadPage() {
       exercise_date: excerciseDate + "T00:00:00",
       mime_type: 'application/zip'
     }
-
     const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
     form.append('solution', metadataBlob);
-    
-    form.append('solution_file', zipFile);
 
-    form.append('coauthors_user_ids', JSON.stringify(selectedCoAuthors));
+    const fileBlob = new Blob([zipFile], { type: 'application/zip' });
+
+    form.append('solution_file', fileBlob);
+
+    if (selectedCoAuthors.length >= 0) {
+      selectedCoAuthors.forEach(id => {
+        form.append('coauthors_user_ids[]', id);
+      });
+      console.log('Selected co-authors:', selectedCoAuthors);
+    }
     form.append('teacher_id', teacher.user_id);
     form.append('role_id', selectedRole || '');
 
@@ -300,7 +305,7 @@ export default function ReportUploadPage() {
         {roles.length !== 0 &&
           roles.map((role) => (
             <option key={role.role_id} value={role.role_id}>
-              {role.role_id + " " + role.name}
+              {role.name}
             </option>
           ))
         }

@@ -127,7 +127,7 @@ export default function AssignmentsTable() {
             alert("Nie masz uprawnień. Zaloguj się ponownie.");
             window.location.href = '/';
           } else if (res.status === 500) {
-            alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
+            //alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
             console.error(`Server error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
           } else if (!res.ok) {
             console.error(`Undefined error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);

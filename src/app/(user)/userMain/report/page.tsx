@@ -31,6 +31,9 @@ export default function ReportUploadPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignmentId, setAssignmentId] = useState<string>('');
 
+  const [teachers, setTeachers] = useState<{full_name: string; user_id: string}[]>([]);
+  const [teacher, setTeacher] = useState<{full_name: string; user_id: string}>({full_name: '', user_id: ''});
+
   const [studentComment, setStudentComment] = useState<string>('');
   const [excerciseDate, setExerciseDate] = useState<string>('');
   const [zipFile, setZipFile] = useState<File | null>(null);
@@ -44,17 +47,37 @@ export default function ReportUploadPage() {
   const [user_id, setUserId] = useState<string>();
 
   useEffect(() => {
-  const updateSubject = () => {
-    const parsed = getSubjectInStorage();
-    setSubject(parsed);
-  };
+    const updateSubject = () => {
+      const parsed = getSubjectInStorage();
+      setSubject(parsed);
+    };
 
-  updateSubject(); // Initial fetch
-  window.addEventListener('subjectChanged', updateSubject);
-  return () => {
-    window.removeEventListener('subjectChanged', updateSubject);
-  };
-}, []);
+    updateSubject(); // Initial fetch
+    window.addEventListener('subjectChanged', updateSubject);
+    return () => {
+      window.removeEventListener('subjectChanged', updateSubject);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!subject?.subject_id) return;
+
+    setTeacher({full_name: '', user_id: ''}); // Reset teacher when subject changes
+
+    fetch(`http://localhost:8000/api/subject/${subject?.subject_id}/teachers`, {
+      method: 'GET',
+      credentials: 'include',
+    }).then((res) => {
+      if (!res.ok) {
+        throw new Error('Failed to fetch teachers');
+      }
+      return res.json();
+    }).then((data) => {
+      setTeachers(data)
+    }).catch((error) => {
+      console.error('Error fetching teachers:', error)
+    });
+  }, [subject?.subject_id]);
 
   useEffect(() => {
 
@@ -109,8 +132,10 @@ export default function ReportUploadPage() {
           mime_type: 'application/zip'
         },
         coauthors_user_ids: selectedCoAuthors,
+        teacher_id: teacher.user_id,
       };
       try {
+        console.log('Sending payload:', payload);
         const response = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/solution`, {
           method: 'POST',
           headers: {
@@ -195,10 +220,21 @@ export default function ReportUploadPage() {
       </select>
 
       <label className={styles.label}>Prowadzący</label>
-      <select className={styles.select}>
-        <option>---</option>
-        <option>Dr Kowalski</option>
-        <option>Mgr Nowak</option>
+      <select
+        className={styles.select}
+        onChange={(e) => {
+          const selected = teachers.find(t => t.user_id === e.target.value);
+          setTeacher(selected ? selected : { full_name: '', user_id: '' });
+        }}
+        value={teacher.user_id}
+        required
+      >
+        <option value="">---</option>
+        {teachers.map((teacher) => (
+          <option key={teacher.user_id} value={teacher.user_id}>
+            {teacher.full_name}
+          </option>
+        ))}
       </select>
 
       <label className={styles.label}>Data odbycia ćwiczenia</label>

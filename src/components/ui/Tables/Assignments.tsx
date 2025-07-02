@@ -224,9 +224,30 @@ export default function AssignmentsTable() {
               <td>{solutionGradeMap[assignment.assignment_id]}</td>
               <td>
                 {solutionExistsMap[assignment.assignment_id] ? (
-                  <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>
-                    Zobacz sprawozdanie
-                  </button>
+                  (() => {
+                    const grade = solutionGradeMap[assignment.assignment_id];
+                    if (grade === undefined || grade === null) {
+                      return <span>Wysłane</span>;
+                    } else if (grade === 2) {
+                      return (
+                        <button
+                          className={userStyles.linkButton}
+                          onClick={() => handleReportClick(assignment)}
+                        >
+                          Zwrot
+                        </button>
+                      );
+                    } else {
+                      return (
+                        <button
+                          className={userStyles.linkButton}
+                          onClick={() => handleReportClick(assignment)}
+                        >
+                          Zobacz sprawozdanie
+                        </button>
+                      );
+                    }
+                  })()
                 ) : (
                   <span>Brak</span>
                 )}

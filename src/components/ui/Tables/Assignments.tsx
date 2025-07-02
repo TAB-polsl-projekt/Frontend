@@ -209,8 +209,6 @@ export default function AssignmentsTable() {
           <tr>
             <th>Ćwiczenie</th>
             <th>Termin 1</th>
-            <th>Poprawa</th>
-            <th>Obecność</th>
             <th>Sprawozdanie</th>
             <th>Ocena</th>
           </tr>
@@ -224,10 +222,6 @@ export default function AssignmentsTable() {
                 </button>
               </td>
               <td>{solutionGradeMap[assignment.assignment_id]}</td>
-              <td></td>
-              <td>
-                {assignment.attendance ? 'Obecny' : 'Nieobecny'}
-              </td>
               <td>
                 {solutionExistsMap[assignment.assignment_id] ? (
                   <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>

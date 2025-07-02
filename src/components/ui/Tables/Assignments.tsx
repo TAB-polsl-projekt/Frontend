@@ -7,6 +7,7 @@ interface Assignment {
   subject_id: string;
   title: string;
   description: string;
+  attendance: boolean;
 }
 
 interface AssignmentsData {
@@ -107,7 +108,12 @@ export default function AssignmentsTable() {
           throw new Error('Undefined error while fetching subject data in /userMain');
         }
         return res.json()
-      }).then((json) => setData(json));
+      }).then((json) => {
+        console.log('Fetched subject data:', json);
+        console.log('Attendance:', json.assignments.map((a: Assignment) => a.attendance));
+        setData(json);
+
+      });
   }, [subject]);
 
   useEffect(() => {
@@ -129,6 +135,8 @@ export default function AssignmentsTable() {
           } else if (res.status === 500) {
             //alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
             console.error(`Server error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
+            console.log('---Either there is no solution, or server is down---');
+            continue;
           } else if (!res.ok) {
             console.error(`Undefined error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
             return;
@@ -217,7 +225,9 @@ export default function AssignmentsTable() {
               </td>
               <td>{solutionGradeMap[assignment.assignment_id]}</td>
               <td></td>
-              <td>Obecny</td>
+              <td>
+                {assignment.attendance ? 'Obecny' : 'Nieobecny'}
+              </td>
               <td>
                 {solutionExistsMap[assignment.assignment_id] ? (
                   <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>

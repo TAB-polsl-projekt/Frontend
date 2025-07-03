@@ -172,6 +172,16 @@ export default function AdminPage() {
 	const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 	const [isNewUserPasswordVisible, setIsNewUserPasswordVisible] = useState<boolean>(false);
 
+	// [1] Dodaj nowe stany na mapę ocen i istnienie rozwiązania
+	const [userSolutionGradeMap, setUserSolutionGradeMap] = useState<Record<string, number | null | undefined>>({});
+	const [userSolutionExistsMap, setUserSolutionExistsMap] = useState<Record<string, boolean>>({});
+
+	// Dodaj stan na aktualną rolę edytującą
+	const [currentEditorRole, setCurrentEditorRole] = useState<Role | null>(null);
+
+	// Dodaj stan na listę ról edytujących w różnych przedmiotach
+	const [editorRolesInSubjects, setEditorRolesInSubjects] = useState<Set<string>>(new Set());
+
 	const fetchSubjects = async (): Promise<Subject[]> => {
 		const res = await fetch(`${baseApiUrl}/subjects`, {
 			method: "GET",
@@ -715,8 +725,58 @@ export default function AdminPage() {
 		});
 	};
 
+	// [1] Przenieś fetchAllSolutions na górę, aby był dostępny w całym komponencie
+	const fetchAllSolutions = async (userId: string, assignments: Assignment[]) => {
+		const gradeMap: Record<string, number | null | undefined> = {};
+		const existsMap: Record<string, boolean> = {};
+		for (const assignment of assignments) {
+			try {
+				const res = await fetch(`${baseApiUrl}/users/${userId}/assignments/${assignment.assignment_id}/solution`, {
+					method: "GET",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+				});
+				existsMap[assignment.assignment_id] = res.ok;
+				if (res.ok) {
+					const json: Solution = await res.json();
+					gradeMap[assignment.assignment_id] = json.grade;
+				} else {
+					gradeMap[assignment.assignment_id] = undefined;
+				}
+			} catch {
+				existsMap[assignment.assignment_id] = false;
+				gradeMap[assignment.assignment_id] = undefined;
+			}
+		}
+		setUserSolutionGradeMap(gradeMap);
+		setUserSolutionExistsMap(existsMap);
+	};
+
+	// [2] Użyj fetchAllSolutions w useEffect
+	useEffect(() => {
+		if (!subjectUser || !apiSubjectAssignments.length) {
+			setUserSolutionGradeMap({});
+			setUserSolutionExistsMap({});
+			return;
+		}
+		fetchAllSolutions(subjectUser.user_id, apiSubjectAssignments);
+	}, [subjectUser, apiSubjectAssignments]);
+
 	const updateUserAssignmentSolution = async (assignmentId: string) => {
 		if (!subject || !subjectUser) return;
+
+		// Przygotuj dane do wysłania
+		let solutionToSend = apiSubjectUserAssignmentSolution;
+		if (!solutionToSend?.review_comment?.trim()) {
+			// Upewnij się, że solution_id i assignment_id są stringami
+			const { solution_id = "", assignment_id = assignmentId, ...rest } = solutionToSend || {};
+			solutionToSend = { ...rest, solution_id, assignment_id, review_comment: "." } as Solution;
+		}
+
+		if (!solutionToSend?.solution_id || !solutionToSend?.assignment_id) {
+			alert("Brak wymaganych danych do wysłania sprawozdania.");
+			return;
+		}
 
 		const res = await fetch(
 			`${baseApiUrl}/users/${subjectUser.user_id}/assignments/${assignmentId}/solution`,
@@ -726,12 +786,14 @@ export default function AdminPage() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(apiSubjectUserAssignmentSolution),
+				body: JSON.stringify(solutionToSend),
 			}
 		);
 
 		if (res.ok) {
 			setIsUserSolutionModalOpen(false);
+			// Odśwież oceny po ocenie sprawozdania
+			fetchAllSolutions(subjectUser.user_id, apiSubjectAssignments);
 		} else {
 			alert("Błąd aktualizowania sprawozdania użytkownika.");
 		}
@@ -1062,6 +1124,129 @@ export default function AdminPage() {
 		};
 	}, [isUserDropdownOpen]);
 
+	// Dodaj useEffect, który odświeża listy studentów po zamknięciu modala edycji ról
+	useEffect(() => {
+		if (!isEditRolesModalOpen && subject) {
+			fetchSubjectEnrolledUsers(subject.subject_id).then((users) => setApiSubjectEnrolledUsers(users));
+			fetchSubjectNotEnrolledUsers(subject.subject_id).then((users) => setApiSubjectNotEnrolledUsers(users));
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isEditRolesModalOpen]);
+
+	// Funkcja do pobierania aktualnej roli edytującej
+	const fetchCurrentEditorRole = async (subjectId: string): Promise<Role | null> => {
+		const res = await fetch(`${baseApiUrl}/subjects/${subjectId}`, {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+
+		if (res.ok) {
+			const data = await res.json();
+			if (data.editor_role_id) {
+				const editorRole = apiRoles.find(role => role.role_id === data.editor_role_id);
+				return editorRole || null;
+			}
+		}
+		return null;
+	};
+
+	// Funkcja do ustawienia roli jako edytującej
+	const setRoleAsEditor = async (roleId: string) => {
+		if (!subject) return;
+
+		const res = await fetch(`${baseApiUrl}/subjects/${subject.subject_id}`, {
+			method: "PUT",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				editor_role_id: roleId
+			}),
+		});
+
+		if (res.ok) {
+			// Odśwież role przedmiotu, aktualną rolę edytującą i listę wszystkich ról edytujących
+			const [roles, editorRole] = await Promise.all([
+				fetchSubjectRoles(subject.subject_id),
+				fetchCurrentEditorRole(subject.subject_id),
+				fetchAllSubjectsWithEditorRoles()
+			]);
+			setSubjectRoles(roles);
+			setCurrentEditorRole(editorRole);
+		} else {
+			alert("Błąd ustawienia roli edytującej.");
+		}
+	};
+
+	// Funkcja do usunięcia roli z przedmiotu i ustawienia jako edytującej
+	const removeRoleAndSetAsEditor = async (roleId: string) => {
+		if (!subject) return;
+
+		// Najpierw usuń rolę z przedmiotu
+		const removeRes = await fetch(`${baseApiUrl}/subjects/remove-role`, {
+			method: "DELETE",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				subject_id: subject.subject_id,
+				role_id: roleId
+			}),
+		});
+
+		if (removeRes.ok) {
+			// Następnie ustaw jako rolę edytującą
+			await setRoleAsEditor(roleId);
+		} else {
+			alert("Błąd usuwania roli z przedmiotu.");
+		}
+	};
+
+	// Funkcja do pobierania wszystkich przedmiotów i ich editor_role_id
+	const fetchAllSubjectsWithEditorRoles = async () => {
+		try {
+			const res = await fetch(`${baseApiUrl}/subjects`, {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+
+			if (res.ok) {
+				const subjects = await res.json();
+				const editorRoleIds = new Set<string>();
+				
+				// Dla każdego przedmiotu pobierz jego editor_role_id
+				for (const subject of subjects) {
+					const subjectRes = await fetch(`${baseApiUrl}/subjects/${subject.subject_id}`, {
+						method: "GET",
+						credentials: "include",
+						headers: {
+							"Content-Type": "application/json",
+						},
+					});
+					
+					if (subjectRes.ok) {
+						const subjectData = await subjectRes.json();
+						if (subjectData.editor_role_id) {
+							editorRoleIds.add(subjectData.editor_role_id);
+						}
+					}
+				}
+				
+				setEditorRolesInSubjects(editorRoleIds);
+			}
+		} catch (error) {
+			console.error("Błąd pobierania ról edytujących:", error);
+		}
+	};
+
 	return (
 		<div className={styles.wrapper}>
 			<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px", gap: "10px" }}>
@@ -1106,10 +1291,15 @@ export default function AdminPage() {
 						className={`${styles.button} ${styles.buttonPrimary}`}
 						onClick={() => {
 							if (subject) {
-								fetchSubjectRoles(subject.subject_id).then((roles) =>
-									setSubjectRoles(roles)
-								);
-								setIsEditRolesModalOpen(true);
+								Promise.all([
+									fetchSubjectRoles(subject.subject_id),
+									fetchCurrentEditorRole(subject.subject_id),
+									fetchAllSubjectsWithEditorRoles()
+								]).then(([roles, editorRole]) => {
+									setSubjectRoles(roles);
+									setCurrentEditorRole(editorRole);
+									setIsEditRolesModalOpen(true);
+								});
 							}
 						}}
 						disabled={!subject}
@@ -1322,35 +1512,31 @@ export default function AdminPage() {
 										key={assignment.assignment_id}
 									>
 										<p>{assignment.title}</p>
-
-										<div className={styles.groupLocal}>
+										<div className={styles.groupLocal} style={{ alignItems: "center", gap: 8 }}>
+											{/* Pole z oceną po lewej */}
+											<span
+												className={styles.button}
+												style={{ minWidth: 80, textAlign: "center", fontWeight: 500, pointerEvents: "none", cursor: "default", background: "#f5f5f5" }}
+											>
+												Ocena:{" "}
+												{userSolutionGradeMap[assignment.assignment_id] !== undefined && userSolutionGradeMap[assignment.assignment_id] !== null
+													? userSolutionGradeMap[assignment.assignment_id]
+													: ""}
+											</span>
 											<button
 												className={`${styles.button} ${styles.buttonPrimary}`}
-												onClick={() =>
-													viewUserSolution(
-														assignment.assignment_id
-													)
-												}
+												onClick={() => viewUserSolution(assignment.assignment_id)}
 												disabled={
 													!subjectUser ||
-													!apiSubjectEnrolledUsers.some(
-														(u) =>
-															u.user_id ===
-															subjectUser.user_id
-													)
+													!apiSubjectEnrolledUsers.some((u) => u.user_id === subjectUser.user_id) ||
+													(userSolutionGradeMap[assignment.assignment_id] !== undefined && userSolutionGradeMap[assignment.assignment_id] !== null)
 												}
 											>
-												Zobacz sprawozdanie wybranego
-												studenta
+												Zobacz sprawozdanie wybranego studenta
 											</button>
-
 											<button
 												className={`${styles.button} ${styles.buttonRed}`}
-												onClick={() =>
-													deleteAssignmentFromSubject(
-														assignment.assignment_id
-													)
-												}
+												onClick={() => deleteAssignmentFromSubject(assignment.assignment_id)}
 											>
 												Usuń cwiczenie
 											</button>
@@ -1615,6 +1801,9 @@ export default function AdminPage() {
 											apiSubjectUserAssignmentSolution.assignment_id
 										);
 									}}
+									disabled={
+										!apiSubjectUserAssignmentSolution.grade && apiSubjectUserAssignmentSolution.grade !== 0
+									}
 								>
 									Zaktualizuj sprawozdanie
 								</button>
@@ -1782,16 +1971,29 @@ export default function AdminPage() {
 											padding: "8px",
 											border: "1px solid #ddd",
 											borderRadius: "4px",
-											backgroundColor: "#f9f9f9"
+											backgroundColor: currentEditorRole?.role_id === role.role_id ? "#e8f5e8" : "#f9f9f9"
 										}}>
-											<span>{role.name}</span>
-											<button
-												className={`${styles.button} ${styles.buttonRed}`}
-												onClick={() => removeRoleFromSubject(role.role_id)}
-												style={{ padding: "4px 8px", fontSize: "12px" }}
-											>
-												Usuń z przedmiotu
-											</button>
+											<span>
+												{role.name}
+												{currentEditorRole?.role_id === role.role_id && " (Sprawdzanie sprawozdań)"}
+											</span>
+											<div style={{ display: "flex", gap: "8px" }}>
+												<button
+													className={`${styles.button} ${styles.buttonGreen}`}
+													onClick={() => setRoleAsEditor(role.role_id)}
+													style={{ padding: "4px 8px", fontSize: "12px" }}
+												>
+													Przyznaj dostęp do sprawozdań
+												</button>
+												<button
+													className={`${styles.button} ${styles.buttonRed}`}
+													onClick={() => removeRoleFromSubject(role.role_id)}
+													style={{ padding: "4px 8px", fontSize: "12px" }}
+													disabled={currentEditorRole?.role_id === role.role_id}
+												>
+													Usuń z przedmiotu
+												</button>
+											</div>
 										</div>
 									))}
 								</div>
@@ -1879,13 +2081,17 @@ export default function AdminPage() {
 												padding: "8px",
 												border: "1px solid #ddd",
 												borderRadius: "4px",
-												backgroundColor: "#fff3cd"
+												backgroundColor: editorRolesInSubjects.has(role.role_id) ? "#fff3cd" : "#fff3cd"
 											}}>
-												<span>{role.name}</span>
+												<span>
+													{role.name}
+													{editorRolesInSubjects.has(role.role_id) && " (Używana do dostępu do sprawozdań)"}
+												</span>
 												<button
 													className={`${styles.button} ${styles.buttonRed}`}
 													onClick={() => deleteGlobalRole(role.role_id)}
 													style={{ padding: "4px 8px", fontSize: "12px" }}
+													disabled={editorRolesInSubjects.has(role.role_id)}
 												>
 													Usuń globalnie
 												</button>

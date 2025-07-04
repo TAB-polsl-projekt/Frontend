@@ -252,7 +252,7 @@ export default function AssignmentsTable() {
                   } else if (grade === undefined || grade === null) {
                     return <span>Wysłane</span>;
                   } else {
-                    return <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>{grade}</button>;
+                    return <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>Zobacz Sprawozdanie</button>;
                   }
                 })()}
               </td>
@@ -272,7 +272,7 @@ export default function AssignmentsTable() {
               {
                 (() => {
                   const grades = Object.values(assignmentGradeMap).filter(
-                    grade => grade !== undefined && grade !== null && !isNaN(grade)
+                    grade => grade !== undefined && grade !== null && !isNaN(grade) && grade !== 0
                   );
                   return grades.length > 0
                     ? (grades.reduce((acc, grade) => acc + grade, 0) / grades.length).toFixed(2)

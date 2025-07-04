@@ -26,6 +26,8 @@ interface Solution {
 }
 
 export default function AssignmentsTable() {
+  const [errorString, setErrorString] = useState<string | null>("Loading...");
+
   const [data, setData] = useState<AssignmentsData | null>(null);
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
@@ -69,6 +71,10 @@ export default function AssignmentsTable() {
           alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
           console.error('Server error while fetching subjects in /userMain');
           return;
+        } else if (res.status === 404) {
+          setErrorString("Nie jesteś zapisany do żadnego przedmiotu. Skontaktuj się z administratorem.");
+          console.error('No subjects found in /userMain');
+          return;
         } else if (!res.ok) {
           throw new Error('Undefined error while fetching subjects in /userMain');
         }
@@ -109,10 +115,7 @@ export default function AssignmentsTable() {
         }
         return res.json()
       }).then((json) => {
-        console.log('Fetched subject data:', json);
-        console.log('Attendance:', json.assignments.map((a: Assignment) => a.attendance));
         setData(json);
-
       });
   }, [subject]);
 
@@ -185,7 +188,7 @@ export default function AssignmentsTable() {
 
   };
 
-  if (!data) return <p>Loading...</p>;
+  if (!data) return <p>{errorString}</p>;
 
   return (
     <div className={userStyles.dashboard}>

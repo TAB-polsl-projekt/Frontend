@@ -24,6 +24,7 @@ type User = {
 	email: string;
 	name: string;
 	surname: string;
+	is_admin: boolean;
 };
 
 type Role = {
@@ -1402,12 +1403,19 @@ export default function AdminPage() {
 															padding: "8px 12px",
 															cursor: "pointer",
 															borderBottom: "1px solid #f0f0f0",
-															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"
+															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white",
+															color: user.is_admin ? "#b71c1c" : undefined,
+															fontWeight: user.is_admin ? "bold" : undefined,
 														}}
 														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
 														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
 													>
 														{user.name} {user.surname}{user.email ? ` ${user.email}` : ""}
+														{user.is_admin && (
+															<span style={{ color: "#b71c1c", fontWeight: "bold", marginLeft: 8, fontSize: 12, border: "1px solid #b71c1c", borderRadius: 4, padding: "2px 6px", background: "#ffebee" }}>
+																ADMIN
+															</span>
+														)}
 													</div>
 												))}
 											</div>
@@ -1434,12 +1442,19 @@ export default function AdminPage() {
 															padding: "8px 12px",
 															cursor: "pointer",
 															borderBottom: "1px solid #f0f0f0",
-															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"
+															backgroundColor: subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white",
+															color: user.is_admin ? "#b71c1c" : undefined,
+															fontWeight: user.is_admin ? "bold" : undefined,
 														}}
 														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
 														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
 													>
 														{user.name} {user.surname}{user.email ? ` ${user.email}` : ""}
+														{user.is_admin && (
+															<span style={{ color: "#b71c1c", fontWeight: "bold", marginLeft: 8, fontSize: 12, border: "1px solid #b71c1c", borderRadius: 4, padding: "2px 6px", background: "#ffebee" }}>
+																ADMIN
+															</span>
+														)}
 													</div>
 												))}
 											</div>
@@ -2375,6 +2390,7 @@ export default function AdminPage() {
 //     email: str
 //     name: str
 //     surname: str
+//     is_admin: bool
 
 // Solution:
 //     solution_id: str

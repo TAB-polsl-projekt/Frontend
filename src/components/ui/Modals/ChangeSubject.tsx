@@ -31,6 +31,10 @@ export default function SubjectModal({ onClose }: SubjectModalProps) {
           alert("Wystąpił błąd serwera. Spróbuj ponownie później.");
           console.error('Server error while fetching subjects in modal');
           return;
+        } else if (res.status === 404) {
+          console.error('No subjects found in modal');
+          onClose();
+          return;
         } else if (!res.ok) {
           throw new Error('Undefined error while fetching subjects in modal');
         }

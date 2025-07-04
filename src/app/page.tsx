@@ -34,6 +34,7 @@ export default function Home() {
         if (!data) return;
         console.log("Login successful:", data);
         localStorage.setItem("e-mail", login);
+        localStorage.removeItem("subject");
         if (data.is_admin) {
           router.push("/adminMain");
         } else {

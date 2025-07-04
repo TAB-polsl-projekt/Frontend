@@ -188,11 +188,12 @@ export default function ReportUploadPage() {
       } else if (response.status === 500) {
         alert('Wystąpił błąd serwera podczas przesyłania sprawozdania.');
         console.error('Server error during upload');
-      } else {
+      } else if (!response.ok) {
         const err = await response.text();
         console.error('Error during upload:', err);
         alert('Błąd podczas przesyłania');
       }
+      console.log('Upload successful:', response);
     } catch (error) {
       console.error('Error during upload:', error);
       alert('Wystąpił błąd podczas przesyłania sprawozdania.');

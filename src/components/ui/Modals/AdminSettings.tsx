@@ -21,6 +21,11 @@ export default function AdminSettingsModal({ onClose }: ModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('Podaj poprawny adres e-mail!');
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       alert('Nowe hasło i potwierdzenie hasła nie są zgodne.');
@@ -77,6 +82,12 @@ export default function AdminSettingsModal({ onClose }: ModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              onBlur={() => {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (email && !emailRegex.test(email)) {
+                  alert('Podaj poprawny adres e-mail!');
+                }
+              }}
             />
           </label>
           <label>

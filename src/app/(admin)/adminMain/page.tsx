@@ -766,17 +766,21 @@ export default function AdminPage() {
 		if (!subject || !subjectUser) return;
 
 		// Przygotuj dane do wysłania
-		let solutionToSend = apiSubjectUserAssignmentSolution;
-		if (!solutionToSend?.review_comment?.trim()) {
-			// Upewnij się, że solution_id i assignment_id są stringami
-			const { solution_id = "", assignment_id = assignmentId, ...rest } = solutionToSend || {};
-			solutionToSend = { ...rest, solution_id, assignment_id, review_comment: "." } as Solution;
+		const grade = apiSubjectUserAssignmentSolution?.grade;
+		let review_comment = apiSubjectUserAssignmentSolution?.review_comment;
+		if (!review_comment || !review_comment.trim()) {
+			review_comment = ".";
 		}
 
-		if (!solutionToSend?.solution_id || !solutionToSend?.assignment_id) {
-			alert("Brak wymaganych danych do wysłania sprawozdania.");
+		if (grade === undefined || grade === null) {
+			alert("Brak wymaganej oceny do wysłania sprawozdania.");
 			return;
 		}
+
+		const payload = {
+			grade,
+			review_comment
+		};
 
 		const res = await fetch(
 			`${baseApiUrl}/users/${subjectUser.user_id}/assignments/${assignmentId}/solution`,
@@ -786,7 +790,7 @@ export default function AdminPage() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(solutionToSend),
+				body: JSON.stringify(payload),
 			}
 		);
 
@@ -1829,6 +1833,12 @@ export default function AdminPage() {
 								onChange={handleNewUserChange}
 								className={styles.input}
 								required
+								onBlur={() => {
+									const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+									if (newUser.email && !emailRegex.test(newUser.email)) {
+										alert('Podaj poprawny adres e-mail!');
+									}
+								}}
 							/>
 						</div>
 
@@ -1916,7 +1926,14 @@ export default function AdminPage() {
 						<div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
 							<button
 								className={`${styles.button} ${styles.buttonGreen}`}
-								onClick={createUser}
+								onClick={() => {
+									const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+									if (!emailRegex.test(newUser.email)) {
+										alert('Podaj poprawny adres e-mail!');
+										return;
+									}
+									createUser();
+								}}
 								disabled={
 									!newUser.email ||
 									!newUser.password_hash ||

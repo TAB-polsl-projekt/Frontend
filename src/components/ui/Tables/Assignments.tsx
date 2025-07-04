@@ -227,7 +227,6 @@ export default function AssignmentsTable() {
           <tr>
             <th>Ćwiczenie</th>
             <th>Termin 1</th>
-            <th>Obecność</th>
             <th>Sprawozdanie</th>
             <th>Ocena</th>
           </tr>
@@ -235,20 +234,19 @@ export default function AssignmentsTable() {
         <tbody>
           {data.assignments.map((assignment) => (
             <tr key={assignment.assignment_id}>
-              <td>
+              <td onClick={() => handleExerciseClick(assignment)} style={{ cursor: 'pointer' }}>
                 <button className={userStyles.linkButton} onClick={() => handleExerciseClick(assignment)}>
                   {assignment.title}
                 </button>
               </td>
               <td>{solutionGradeMap[assignment.assignment_id]}</td>
-              <td>{assignment.attendance}</td>
-              <td>
+              <td className={solutionGradeMap[assignment.assignment_id] === 2 ? userStyles.linkButtonFunny : userStyles.linkButton} onClick={() => handleReportClick(assignment)} style={{ cursor: 'pointer' }}>
                 {(() => {
                   const grade = solutionGradeMap[assignment.assignment_id];
                   if (isNaN(grade)) {
                     return <span>Brak</span>;
                   } else if (grade === 2) {
-                    return <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>Zwrot</button>;
+                    return <button className={userStyles.linkButtonFunny} onClick={() => handleReportClick(assignment)}>Zwrot</button>;
                   } else if (grade === undefined || grade === null) {
                     return <span>Wysłane</span>;
                   } else {
@@ -265,7 +263,7 @@ export default function AssignmentsTable() {
             </tr>
           ))}
           <tr>
-            <td colSpan={4} className={userStyles.footer} style={{ border: 'none', backgroundColor: '#ffffff' }}>
+            <td colSpan={3} className={userStyles.footer} style={{ border: 'none', backgroundColor: '#ffffff' }}>
               <p></p>
             </td>
             <td>

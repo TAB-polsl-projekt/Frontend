@@ -8,6 +8,173 @@
   min-height: 100vh;
 }
 
+@keyframes identifier {
+  0% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_00_delay-0.1s.png'), auto;
+  }
+
+  2.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_01_delay-0.1s.png'), auto;
+  }
+
+  5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_02_delay-0.1s.png'), auto;
+  }
+
+  7.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_03_delay-0.1s.png'), auto;
+  }
+
+  10% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_04_delay-0.1s.png'), auto;
+  }
+
+  12.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_05_delay-0.1s.png'), auto;
+  }
+
+  15% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_06_delay-0.1s.png'), auto;
+  }
+
+  17.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_07_delay-0.1s.png'), auto;
+  }
+
+  20% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_08_delay-0.1s.png'), auto;
+  }
+
+  22.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_09_delay-0.1s.png'), auto;
+  }
+
+  25% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_10_delay-0.1s.png'), auto;
+  }
+
+  27.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_11_delay-0.1s.png'), auto;
+  }
+
+  30% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_12_delay-0.1s.png'), auto;
+  }
+
+  32.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_13_delay-0.1s.png'), auto;
+  }
+
+  35% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_14_delay-0.1s.png'), auto;
+  }
+
+  37.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_15_delay-0.1s.png'), auto;
+  }
+
+  40% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_16_delay-0.1s.png'), auto;
+  }
+
+  42.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_17_delay-0.1s.png'), auto;
+  }
+
+  45% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_18_delay-0.1s.png'), auto;
+  }
+
+  47.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_19_delay-0.1s.png'), auto;
+  }
+
+  50% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_20_delay-0.1s.png'), auto;
+  }
+
+  52.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_21_delay-0.1s.png'), auto;
+  }
+
+  55% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_22_delay-0.1s.png'), auto;
+  }
+
+  57.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_23_delay-0.1s.png'), auto;
+  }
+
+  60% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_24_delay-0.1s.png'), auto;
+  }
+
+  62.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_25_delay-0.1s.png'), auto;
+  }
+
+  65% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_26_delay-0.1s.png'), auto;
+  }
+
+  67.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_27_delay-0.1s.png'), auto;
+  }
+
+  70% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_28_delay-0.1s.png'), auto;
+  }
+
+  72.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_29_delay-0.1s.png'), auto;
+  }
+
+  75% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_30_delay-0.1s.png'), auto;
+  }
+
+  77.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_31_delay-0.1s.png'), auto;
+  }
+
+  80% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_32_delay-0.1s.png'), auto;
+  }
+
+  82.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_33_delay-0.1s.png'), auto;
+  }
+
+  85% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_34_delay-0.1s.png'), auto;
+  }
+
+  87.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_35_delay-0.1s.png'), auto;
+  }
+
+  90% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_36_delay-0.1s.png'), auto;
+  }
+
+  92.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_37_delay-0.1s.png'), auto;
+  }
+
+  95% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_38_delay-0.1s.png'), auto;
+  }
+
+  97.5% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_39_delay-0.1s.png'), auto;
+  }
+
+  100% {
+    cursor: url('http://localhost:3000/zwrocikHaHaHa/frame_40_delay-0.1s.png'), auto;
+  }
+
+}
+
 .dark .container {
   background-color: #121212;
 }
@@ -83,6 +250,7 @@
   text-align: left;
   vertical-align: center;
 }
+
 .table td {
   border: 1px solid #000000;
   padding: 0.5rem;
@@ -108,6 +276,21 @@
   font: inherit;
   text-align: left;
   transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.linkButtonFunny {
+  animation: identifier 3s infinite;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.linkButtonFunny:hover {
+  color: #ff0000;
+  text-decoration: underline;
 }
 
 .linkButton:hover {

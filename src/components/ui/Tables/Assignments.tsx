@@ -36,6 +36,7 @@ export default function AssignmentsTable() {
   const [solutionExistsMap, setSolutionExistsMap] = useState<Record<string, boolean>>({});
   const [solutionGradeMap, setSolutionGradeMap] = useState<Record<string, number>>({});
   const [solutionRedoGradeMap, setSolutionRedoGradeMap] = useState<Record<string, number>>({});
+  const [assignmentGradeMap, setAssignmentGradeMap] = useState<Record<string, number>>({});
 
   const [subject, setSubject] = useState<{ subject_id: string; subject_name: string } | null>(null);
 
@@ -52,10 +53,8 @@ export default function AssignmentsTable() {
     };
   }, []);
 
-
   useEffect(() => {
-    if (subject?.subject_id) {
-      setData;
+    if (subject?.subject_id && data) {
       return; // Already set—do nothing
     }
 
@@ -140,6 +139,9 @@ export default function AssignmentsTable() {
             console.error(`Server error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
             console.log('---Either there is no solution, or server is down---');
             continue;
+          } else if (res.status === 404) {
+            console.log(`No solution found for assignment ${assignment.assignment_id}`);
+            continue; // No solution exists for this assignment
           } else if (!res.ok) {
             console.error(`Undefined error while fetching solution for assignment ${assignment.assignment_id} in /userMain`);
             return;
@@ -156,6 +158,19 @@ export default function AssignmentsTable() {
 
     fetchSolutions();
   }, [data]);
+
+  useEffect(() => {
+    const newMap: Record<string, number> = {};
+    for (const assignment of data?.assignments || []) {
+      if (solutionExistsMap[assignment.assignment_id]) {
+        const grade = solutionGradeMap[assignment.assignment_id];
+        newMap[assignment.assignment_id] = grade ?? 0;
+      } else {
+        newMap[assignment.assignment_id] = NaN;
+      }
+    }
+    setAssignmentGradeMap(newMap);
+  }, [data, solutionExistsMap, solutionGradeMap]);
 
   const handleExerciseClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
@@ -212,6 +227,7 @@ export default function AssignmentsTable() {
           <tr>
             <th>Ćwiczenie</th>
             <th>Termin 1</th>
+            <th>Obecność</th>
             <th>Sprawozdanie</th>
             <th>Ocena</th>
           </tr>
@@ -225,44 +241,46 @@ export default function AssignmentsTable() {
                 </button>
               </td>
               <td>{solutionGradeMap[assignment.assignment_id]}</td>
+              <td>{assignment.attendance}</td>
               <td>
-                {solutionExistsMap[assignment.assignment_id] ? (
-                  (() => {
-                    const grade = solutionGradeMap[assignment.assignment_id];
-                    if (grade === undefined || grade === null) {
-                      return <span>Wysłane</span>;
-                    } else if (grade === 2) {
-                      return (
-                        <button
-                          className={userStyles.linkButton}
-                          onClick={() => handleReportClick(assignment)}
-                        >
-                          Zwrot
-                        </button>
-                      );
-                    } else {
-                      return (
-                        <button
-                          className={userStyles.linkButton}
-                          onClick={() => handleReportClick(assignment)}
-                        >
-                          Zobacz sprawozdanie
-                        </button>
-                      );
-                    }
-                  })()
-                ) : (
-                  <span>Brak</span>
-                )}
+                {(() => {
+                  const grade = solutionGradeMap[assignment.assignment_id];
+                  if (isNaN(grade)) {
+                    return <span>Brak</span>;
+                  } else if (grade === 2) {
+                    return <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>Zwrot</button>;
+                  } else if (grade === undefined || grade === null) {
+                    return <span>Wysłane</span>;
+                  } else {
+                    return <button className={userStyles.linkButton} onClick={() => handleReportClick(assignment)}>{grade}</button>;
+                  }
+                })()}
               </td>
               <td>{
-                solutionRedoGradeMap[assignment.assignment_id] !== undefined
-                  ? (solutionRedoGradeMap[assignment.assignment_id] + solutionGradeMap[assignment.assignment_id]) / 2
-                  : solutionGradeMap[assignment.assignment_id] || 'Brak oceny'
+                assignmentGradeMap[assignment.assignment_id] !== undefined && assignmentGradeMap[assignment.assignment_id] !== null && !isNaN(assignmentGradeMap[assignment.assignment_id])
+                  ? assignmentGradeMap[assignment.assignment_id]
+                  : <span>Brak oceny</span>
               }
               </td>
             </tr>
           ))}
+          <tr>
+            <td colSpan={4} className={userStyles.footer} style={{ border: 'none', backgroundColor: '#ffffff' }}>
+              <p></p>
+            </td>
+            <td>
+              {
+                (() => {
+                  const grades = Object.values(assignmentGradeMap).filter(
+                    grade => grade !== undefined && grade !== null && !isNaN(grade)
+                  );
+                  return grades.length > 0
+                    ? (grades.reduce((acc, grade) => acc + grade, 0) / grades.length).toFixed(2)
+                    : <span>Brak ocen</span>;
+                })()
+              }
+            </td>
+          </tr>
         </tbody>
       </table>
       {isSubjectModalOpen && selectedAssignment && (

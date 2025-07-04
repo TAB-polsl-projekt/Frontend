@@ -1343,7 +1343,7 @@ export default function AdminPage() {
 										onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
 										style={{ width: "100%", textAlign: "left", justifyContent: "space-between" }}
 									>
-										{subjectUser ? `${subjectUser.name} ${subjectUser.surname} (${subjectUser.email})` : "Wybierz studenta"}
+										{subjectUser ? `${subjectUser.name} ${subjectUser.surname}${subjectUser.email ? ` ${subjectUser.email}` : ""}` : "Wybierz studenta"}
 										<span>▼</span>
 									</button>
 
@@ -1403,7 +1403,7 @@ export default function AdminPage() {
 														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
 														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
 													>
-														{user.name} {user.surname} ({user.email})
+														{user.name} {user.surname}{user.email ? ` ${user.email}` : ""}
 													</div>
 												))}
 											</div>
@@ -1435,7 +1435,7 @@ export default function AdminPage() {
 														onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
 														onMouseLeave={(e) => e.currentTarget.style.backgroundColor = subjectUser?.user_id === user.user_id ? "#e3f2fd" : "white"}
 													>
-														{user.name} {user.surname} ({user.email})
+														{user.name} {user.surname}{user.email ? ` ${user.email}` : ""}
 													</div>
 												))}
 											</div>
@@ -1630,8 +1630,7 @@ export default function AdminPage() {
 						{subjectUser && subject && (
 							<div>
 								<p>
-									<strong>Użytkownik:</strong> {subjectUser.name}{" "}
-									{subjectUser.surname} ({subjectUser.email})
+									<strong>Użytkownik:</strong> {subjectUser.name} {subjectUser.surname}{subjectUser.email ? ` ${subjectUser.email}` : ""}
 								</p>
 								<p>
 									<strong>Przedmiot:</strong> {subject.subject_name}
@@ -2121,7 +2120,7 @@ export default function AdminPage() {
 					<div className={styles.modalContent} style={{ maxHeight: "80vh", overflowY: "auto" }}>
 						{subjectUser && subject && (
 							<div style={{ marginBottom: "20px" }}>
-								<p><strong>Użytkownik:</strong> {subjectUser.name} {subjectUser.surname} ({subjectUser.email})</p>
+								<p><strong>Użytkownik:</strong> {subjectUser.name} {subjectUser.surname} ({subjectUser.email ? `${subjectUser.email}` : ""})</p>
 								<p><strong>Przedmiot:</strong> {subject.subject_name}</p>
 							</div>
 						)}
@@ -2253,7 +2252,7 @@ export default function AdminPage() {
 												{user.name} {user.surname}
 											</div>
 											<div style={{ fontSize: "14px", color: "#666" }}>
-												{user.email}
+												{user.email ? `${user.email}` : ""}
 											</div>
 											{user.student_id && (
 												<div style={{ fontSize: "12px", color: "#888" }}>
